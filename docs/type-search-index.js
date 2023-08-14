@@ -1,1 +1,0 @@
-typeSearchIndex = [{"l":"All Classes and Interfaces","u":"allclasses-index.html"},{"p":"kumotechmadlab.sffreader","l":"KumoSFFReader"},{"p":"kumotechmadlab.sffreader","l":"SFFDecodeException"}];updateSearchResults();

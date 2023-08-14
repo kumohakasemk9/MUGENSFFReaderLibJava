@@ -16,7 +16,7 @@ public class KumoSFFReader {
 		Open SFF and cache some basic information
 		@param filename SFF filename to open
 		@throws IOException when IO Error occured
-		@throws SFFException when SFF was bad
+		@throws SFFDecodeException when SFF was bad
 		@throws EOFException when SFF is shorter than expected
 	*/
 	public KumoSFFReader(String filename) throws IOException, SFFDecodeException {
@@ -179,7 +179,7 @@ public class KumoSFFReader {
 		@throws IOException when IO Error occured.
 		@throws EOFException when SFF is shorter than excepted.
 	*/
-	public byte[] GetRawImageData(int imgid) throws IOException {
+	public byte[] GetRawImage(int imgid) throws IOException {
 		SFFElements e = sffinfo[imgid];
 		byte r[];
 		int linkstate = GetLinkState(imgid);
