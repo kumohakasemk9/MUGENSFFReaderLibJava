@@ -5,10 +5,10 @@ Written in Java.
    
 # How to use
 first, please add library jar to class path. and   
-	import kumotechmadlab.sffreader.*;
-	// ....
-	KumoSFFReader sff = new KumoSFFReader(your_sff);
-	// ....
+    import kumotechmadlab.sffreader.*;
+    // ....
+    KumoSFFReader sff = new KumoSFFReader(your_sff);
+    // ....
    
 KumoSFFReader functions:   
 Constructors:   
