@@ -148,6 +148,26 @@ public class KumoSFFReader {
 	}
 	
 	/**
+		Returns x coordinate of image of index
+		@param imgid Image index in order of sff subfiles.
+		@return specified X center coordinate of image
+		@throws ArrayIndexOutOfBoundsException when imgid is greater than image count.
+	*/
+	public int GetX(int imgid) {
+		return sffinfo[imgid].x;
+	}
+	
+	/**
+		Returns y coordinate of image of index
+		@param imgid Image index in order of sff subfiles.
+		@return specified Y center coordinate of image
+		@throws ArrayIndexOutOfBoundsException when imgid is greater than image count.
+	*/
+	public int GetY(int imgid) {
+		return sffinfo[imgid].y;
+	}
+	
+	/**
 		Returns image link id of index. Returns -1 if the image is not linked one.
 		@param imgid Image index in order of sff subfiles.
 		@return if image is linked, destination image index. or -1 if not linked.
