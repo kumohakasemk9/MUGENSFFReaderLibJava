@@ -8,7 +8,7 @@ Written in Java.
 	// ....
 	KumoSFFReader sff = new KumoSFFReader(your_sff);
 	// ....
-There is Javadoc   
+There is Javadoc: https://kumohakasemk9.github.io/MUGENSFFReaderLibJava/doc      
 
 # License
 KumoSFFReader (C) 2023 Kumohakase    
