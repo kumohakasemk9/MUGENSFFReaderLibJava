@@ -24,7 +24,9 @@ Get total image count in sff
 Get Group Number parameter of yhe image at index imgid
 - int GetImageNumber(int imgid)   
 Get Image Number parameter
-- java.awt.Point GetCoordinate(int imgid)   
+- java.awt.Point GetCoordinate(int imgid)
+- int GetX(int imgid)
+- int GetY(int imgid)    
 Get Image center axis parameter
 - int GetLinkState(int imgid)   
 Get link destination index if the image is linked, -1 if not linked.
