@@ -29,7 +29,7 @@ Get Image Number parameter
 - int GetY(int imgid)    
 Get Image center axis parameter
 - int GetLinkState(int imgid)   
-Get link destination index if the image is linked, -1 if not linked.
+Get link destination index if the image is linked, -1 if not linked.   
 - boolean IsSharedPalette(int imgid)   
 Returns true if image is stored as 'shared palette' mode.  
 in this mode, the image is sharing palette data with index0 image,  
@@ -41,17 +41,17 @@ Returns raw image (in sffv1, it is raw pcx) of the image at index imgid
   
 Searchers:   
 - int FindIndexByNumbers(int grp, int ino)   
-Find image having the same Group Number as grp and the same Image Number as ino
+Find image having the same Group Number as grp and the same Image Number as ino   
 then returns index, -1 if not found.
 - int ListIndexesByGroupNo(int grp)   
-Find images having the same group number as grp,
-then returns indexes. Returning array will be sorted by index, not by Image Number.
+Find images having the same group number as grp,   
+then returns indexes. Returning array will be sorted by index, not by Image Number.  
   
 Other functions:  
 - closeSFF()   
-Call it when application exit. You can cache all image data and call it too.
-(sff file is closed but you can still get sff information, but you can not do
-GetRawImage() )
+Call it when application exit. You can cache all image data and call it too.   
+(sff file is closed but you can still get sff information, but you can not do   
+GetRawImage() )   
 - GetLibVersion()   
 Returns version string
 - GetLibInformation()   
