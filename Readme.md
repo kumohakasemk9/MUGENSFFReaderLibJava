@@ -12,47 +12,47 @@ first, please add library jar to class path. and
    
 KumoSFFReader functions:   
 Constructors:   
-- KumoSFFReader(String filename)
+- KumoSFFReader(String filename)   
 Open sff having filename then open and cache information.
-- KumoSFFReader(File target)
+- KumoSFFReader(File target)   
 Same but accepts java.io.File as file pointer
   
 Information getter:   
-- int GetImageCount()
+- int GetImageCount()   
 Get total image count in sff
-- int GetGroupNumber(int imgid)
+- int GetGroupNumber(int imgid)   
 Get Group Number parameter of yhe image at index imgid
-- int GetImageNumber(int imgid)
+- int GetImageNumber(int imgid)   
 Get Image Number parameter
-- java.awt.Point GetCoordinate(int imgid)
+- java.awt.Point GetCoordinate(int imgid)   
 Get Image center axis parameter
-- int GetLinkState(int imgid)
+- int GetLinkState(int imgid)   
 Get link destination index if the image is linked, -1 if not linked.
-- boolean IsSharedPalette(int imgid)
+- boolean IsSharedPalette(int imgid)   
 Returns true if image is stored as 'shared palette' mode.  
 in this mode, the image is sharing palette data with index0 image,  
 even if image itself has palette data.  
   
 Data getter:  
-- byte\[\] GetRawImage(int imgid)
+- byte\[\] GetRawImage(int imgid)   
 Returns raw image (in sffv1, it is raw pcx) of the image at index imgid
   
 Searchers:   
-- int FindIndexByNumbers(int grp, int ino)
+- int FindIndexByNumbers(int grp, int ino)   
 Find image having the same Group Number as grp and the same Image Number as ino
 then returns index, -1 if not found.
-- int ListIndexesByGroupNo(int grp)
+- int ListIndexesByGroupNo(int grp)   
 Find images having the same group number as grp,
 then returns indexes. Returning array will be sorted by index, not by Image Number.
   
 Other functions:  
-- closeSFF()
+- closeSFF()   
 Call it when application exit. You can cache all image data and call it too.
 (sff file is closed but you can still get sff information, but you can not do
 GetRawImage() )
-- GetLibVersion()
+- GetLibVersion()   
 Returns version string
-- GetLibInformation()
+- GetLibInformation()   
 Returns Library information string
 
 You can generate javadoc         
