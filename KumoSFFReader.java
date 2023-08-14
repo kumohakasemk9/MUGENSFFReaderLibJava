@@ -205,7 +205,7 @@ public class KumoSFFReader {
 		int linkstate = GetLinkState(imgid);
 		if(linkstate != -1) {
 			//linked mode.
-			return GetRawImageData(linkstate); //Recursive call
+			return GetRawImage(linkstate); //Recursive call
 		} else {
 			//actual image. read data.
 			r = new byte[e.image_length];
