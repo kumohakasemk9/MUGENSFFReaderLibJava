@@ -72,4 +72,3 @@ Please consider supporting me https://ko-fi.com/kumohakase
 
 # Todo
 - SFFv2 reading
-- PCX decoding
