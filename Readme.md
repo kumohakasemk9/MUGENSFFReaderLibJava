@@ -39,6 +39,11 @@ even if image itself has palette data.
 Data getter:  
 - byte\[\] GetRawImage(int imgid)   
 Returns raw image (in sffv1, it is raw pcx) of the image at index imgid
+- BufferedImage ConvertImage(int imgid)   
+Returns java.awt.image.BufferedImage object of the image at index imgid
+- int\[\] GetPalette(int imgid)   
+Returns 256 colour palette (Array of ARGB8888 in order of colour index)    
+ of the image at index imgid
   
 Searchers:   
 - int FindIndexByNumbers(int grp, int ino)   
