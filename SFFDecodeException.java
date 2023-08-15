@@ -9,6 +9,7 @@ public class SFFDecodeException extends Exception {
 	public static final int BAD_VER = 1;
 	public static final int BAD_FILE = 2;
 	public static final int BAD_SUBFILE = 3;
+	public static final int MISSING_DATA = 4;
 	final int ErrorNumber;
 	final int ErroredSubfileNumber;
 	
@@ -34,7 +35,7 @@ public class SFFDecodeException extends Exception {
 	
 	/**
 		Return error reason ID
-		0: Not a sff 1: Incompatible Version 2: Bad record 3: Bad Subfile
+		0: Not a sff 1: Incompatible Version 2: Bad record 3: Bad Subfile 4:Missing needed data
 	*/
 	public int getErrorNumber() {
 		return ErrorNumber;
