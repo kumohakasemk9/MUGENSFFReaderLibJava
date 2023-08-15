@@ -55,9 +55,9 @@ then returns indexes. Returning array will be sorted by index, not by Image Numb
   
 Other functions:  
 - closeSFF()   
-Call it when application exit. You can cache all image data and call it too.   
+Call it when application exit. Buffering all image data and calling it is recommended.   
 (sff file is closed but you can still get sff information, but you can not do   
-GetRawImage() )   
+Data getter Functions )   
 - GetLibVersion()   
 Returns version string
 - GetLibInformation()   
@@ -72,3 +72,4 @@ Please consider supporting me https://ko-fi.com/kumohakase
 
 # Todo
 - SFFv2 reading
+- Set external palette
