@@ -77,9 +77,9 @@ Returns image size information of image
 - int SFFv2GetImageType(int imgid)
 Returns image compression method.   
 0: Raw 1: Invalid(Linked) 2: RLE8 3: RLE5 4: LZ5   
-- int SFFv2GetImagePaletteIndex(int imgid)
+- int SFFv2GetImagePaletteIndex(int imgid)   
 Returns palette index associated with image    
-- int\[\] SFFv2GetPalette(int palid)
+- int\[\] SFFv2GetPalette(int palid)   
 Returns colour palette (array of ARGB888) of palette at index palid    
 - int SFFv2GetPaletteLinkedState(int palid)   
 Returns palette linked id if palette is linked, otherwise -1    
