@@ -6,6 +6,7 @@ import java.awt.*;
 import javax.imageio.*;
 import kumotechmadlab.sffreader.*;
 
+/** SFF Reader class */
 public class KumoSFFReader {
 	RandomAccessFile sff;
 	SFFElements sffinfo[];
@@ -682,7 +683,10 @@ public class KumoSFFReader {
 		return r;
 	}
 	
-	//test
+	/**
+		for test, currently outputs 9000, 0 image of specified sff as output.png or
+		output.raw and output.act combo.
+	*/
 	public static void main(String args[]) throws Exception {
 		//Open SFF
 		KumoSFFReader sr = new KumoSFFReader(args[0]);
