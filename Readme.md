@@ -1,5 +1,6 @@
 # KumoSFFReader
 This library provides function reading MUGEN sff imagearray   
+Now with sffv2 beta support (Raw data out only)   
 file format made by Elecbyte  
 Written in Java.   
    
@@ -95,5 +96,5 @@ CC BY-SA https://creativecommons.org/licenses/by-sa/4.0/
 Please consider supporting me https://ko-fi.com/kumohakase  
 
 # Todo
-- SFFv2 reading
+- RLE8, RLE5, LZ5 decode
 - Set external palette
