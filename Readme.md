@@ -31,21 +31,37 @@ Get Image Number parameter
 Get Image center axis parameter
 - int GetLinkState(int imgid)   
 Get link destination index if the image is linked, -1 if not linked.   
-- boolean IsSharedPalette(int imgid)   
+- boolean IsSharedPalette(int imgid) SFFv1 only  
 Returns true if image is stored as 'shared palette' mode.  
 in this mode, the image is sharing palette data with index0 image,  
-even if image itself has palette data.  
-  
+even if image itself has palette data.    
+- int SFFv2GetImageColorDepth(int imgid) SFFv2 only
+Returns color depth of image at index imgid, usually 8 for 256 index color image   
+- int SFFv2GetImageHeight(int imgid) SFFv2 only
+- int SFFv2GetImageWidth(int imgid) SFFv2 only
+- java.awt.Dimension SFFv2GetImageSize(int imgid) SFFv2 only  
+Returns image size information of image   
+- int SFFv2GetImageType(int imgid) SFFv2 only   
+Returns image compression method.   
+0: Raw 1: Invalid(Linked) 2: RLE8 3: RLE5 4: LZ5   
+- int SFFv2GetImagePaletteIndex(int imgid) SFFv2 only  
+Returns palette index associated with image    
+- int SFFv2GetPaletteSize(int palid) SFFv2 only
+Returns palette color count      
+- int SFFv2GetPaletteLinkedState(int palid) SFFv2 only  
+Returns palette linked id if palette is linked, otherwise -1   
+
 Data getter:  
 - byte\[\] GetRawImage(int imgid)   
 Returns raw image (in sffv1, it is raw pcx) of the image at index imgid
-- BufferedImage ConvertImage(int imgid)   
+- BufferedImage ConvertImage(int imgid) SFFv1 only  
 Returns java.awt.image.BufferedImage object of the image at index imgid   
-Currently sffv1 only   
-- int\[\] GetPalette(int imgid)   
+- int\[\] GetPalette(int imgid) SFFv1 only  
 Returns 256 colour palette (Array of ARGB8888 in order of colour index)    
- of the image at index imgid. sffv1 only, returns null if called when sffv2 mode.   
-  
+ of the image at index imgid.  
+- int\[\] SFFv2GetPalette(int palid) SFFv2 only  
+Returns colour palette (array of ARGB888) of palette at index palid    
+    
 Searchers:   
 - int FindIndexByNumbers(int grp, int ino)   
 Find image having the same Group Number as grp and the same Image Number as ino   
@@ -68,23 +84,8 @@ Returns Library information string
 
 SFFv2 only functions:   
 These functions will return null, -1 or jiberrish when reder is reading sffv1   
-- int SFFv2GetImageColorDepth(int imgid)   
-Returns color depth of image at index imgid, usually 8 for 256 index color image   
-- int SFFv2GetImageHeight(int imgid)
-- int SFFv2GetImageWidth(int imgid) 
-- java.awt.Dimension SFFv2GetImageSize(int imgid)   
-Returns image size information of image   
-- int SFFv2GetImageType(int imgid)
-Returns image compression method.   
-0: Raw 1: Invalid(Linked) 2: RLE8 3: RLE5 4: LZ5   
-- int SFFv2GetImagePaletteIndex(int imgid)   
-Returns palette index associated with image    
-- int\[\] SFFv2GetPalette(int palid)   
-Returns colour palette (array of ARGB888) of palette at index palid    
-- int SFFv2GetPaletteLinkedState(int palid)   
-Returns palette linked id if palette is linked, otherwise -1    
-- int SFFv2GetPaletteSize(int palid)
-Returns palette color count    
+
+
 
 You can generate javadoc         
 
