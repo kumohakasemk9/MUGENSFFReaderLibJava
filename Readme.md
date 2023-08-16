@@ -35,7 +35,7 @@ Get link destination index if the image is linked, -1 if not linked.
 Returns true if image is stored as 'shared palette' mode.  
 in this mode, the image is sharing palette data with index0 image,  
 even if image itself has palette data.    
-- int SFFv2GetImageColorDepth(int imgid) SFFv2 only
+- int SFFv2GetImageColorDepth(int imgid) SFFv2 only    
 Returns color depth of image at index imgid, usually 8 for 256 index color image   
 - int SFFv2GetImageHeight(int imgid) SFFv2 only
 - int SFFv2GetImageWidth(int imgid) SFFv2 only
@@ -46,7 +46,7 @@ Returns image compression method.
 0: Raw 1: Invalid(Linked) 2: RLE8 3: RLE5 4: LZ5   
 - int SFFv2GetImagePaletteIndex(int imgid) SFFv2 only  
 Returns palette index associated with image    
-- int SFFv2GetPaletteSize(int palid) SFFv2 only
+- int SFFv2GetPaletteSize(int palid) SFFv2 only    
 Returns palette color count      
 - int SFFv2GetPaletteLinkedState(int palid) SFFv2 only  
 Returns palette linked id if palette is linked, otherwise -1   
