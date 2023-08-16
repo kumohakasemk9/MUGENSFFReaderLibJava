@@ -17,15 +17,20 @@ public class KumoSFFReader {
 	final byte VER_V2[] = {0, 0, 0, 2};
 	final byte VER_V2_1[] = {0, 1, 0, 2};
 	int SFFVersion;
-	
-	public static final int SFF_V1 = 1; /** SFF version 1 */
-	public static final int SFF_V2 = 2; /** SFF version 2 */
-	
-	public static final int SFFV2_IMGTYPE_RAW = 0; /** Raw format image */
-	public static final int SFFV2_IMGTYPE_INVALID = 1; /** Invalid format image */
-	public static final int SFFV2_IMGTYPE_RLE8 = 2; /** RLE8 format image */
-	public static final int SFFV2_IMGTYPE_RLE5 = 3; /** RLE5 format image */
-	public static final int SFFV2_IMGTYPE_LZ5 = 4; /** LZ5 format image */
+	/** SFF version 1 */
+	public static final int SFF_V1 = 1; 
+	/** SFF version 2 */
+	public static final int SFF_V2 = 2; 
+	/** Raw format image */
+	public static final int SFFV2_IMGTYPE_RAW = 0; 
+	/** Invalid format image (mostly linked) */
+	public static final int SFFV2_IMGTYPE_INVALID = 1; 
+	/** RLE8 format image */
+	public static final int SFFV2_IMGTYPE_RLE8 = 2; 
+	/** RLE5 format image */
+	public static final int SFFV2_IMGTYPE_RLE5 = 3; 
+	/** LZ5 format image */
+	public static final int SFFV2_IMGTYPE_LZ5 = 4; 
 	
 	/**
 		Open SFF and cache some basic information
