@@ -3,15 +3,29 @@ package kumotechmadlab.sffreader;
 import java.io.*;
 import java.awt.image.*;
 import java.awt.*;
+import javax.imageio.*;
 import kumotechmadlab.sffreader.*;
 
 public class KumoSFFReader {
 	RandomAccessFile sff;
 	SFFElements sffinfo[];
+	SFFPaletteElement palinfo[];
 	int SharedPal[] = null;
-	final static String VER = "Build-AUG152023";
+	final static String VER = "Build-AUG162023";
 	final byte IDENT[] = {'E', 'l', 'e', 'c', 'b', 'y', 't', 'e', 'S', 'p', 'r', 0};
 	final byte VER_V1[] = {0, 1, 0, 1};
+	final byte VER_V2[] = {0, 0, 0, 2};
+	final byte VER_V2_1[] = {0, 1, 0, 2};
+	int SFFVersion;
+	
+	public static final int SFF_V1 = 1; /** SFF version 1 */
+	public static final int SFF_V2 = 2; /** SFF version 2 */
+	
+	public static final int SFFV2_IMGTYPE_RAW = 0; /** Raw format image */
+	public static final int SFFV2_IMGTYPE_INVALID = 1; /** Invalid format image */
+	public static final int SFFV2_IMGTYPE_RLE8 = 2; /** RLE8 format image */
+	public static final int SFFV2_IMGTYPE_RLE5 = 3; /** RLE5 format image */
+	public static final int SFFV2_IMGTYPE_LZ5 = 4; /** LZ5 format image */
 	
 	/**
 		Open SFF and cache some basic information
@@ -34,21 +48,30 @@ public class KumoSFFReader {
 	}
 	
 	void initSFF() throws SFFDecodeException, IOException {
-		//Read main header (top 28 bytes)
-		byte hdr[] = new byte[28];
+		//Read magic byte and version
+		byte hdr[] = new byte[16];
 		sff.readFully(hdr);
 		//Check magic byte, if wrong then error
 		if(!Common.compareBytes(hdr, 0, IDENT) ) {
-			throw new SFFDecodeException("File magic byte missmatch!", 
-				SFFDecodeException.WRONG_IDENT);
+			throw new SFFDecodeException("File magic byte missmatch!", SFFDecodeException.WRONG_IDENT);
 		}
 		//Check file ver
-		if(!Common.compareBytes(hdr, 12, VER_V1) ) {
-			throw new SFFDecodeException("Incompatible sff version!",
-				SFFDecodeException.BAD_VER);
+		if(Common.compareBytes(hdr, 12, VER_V1) ) {
+			initSFFv1(); //SFF v1 reading
+		} else if(Common.compareBytes(hdr, 12, VER_V2) || Common.compareBytes(hdr, 12, VER_V2_1) ) {
+			initSFFv2(); //SFF v2 reading
+		} else {
+			throw new SFFDecodeException("Incompatible sff version!", SFFDecodeException.BAD_VER);
 		}
-		int image_total = (int)Common.b2ui(hdr, 20, 4); //Offset +20, uint32_t, total image count
-		int file_offset = (int)Common.b2ui(hdr, 24, 4); //Offset +24, uint32_t, subfile offset	
+	}
+	
+	void initSFFv1() throws SFFDecodeException, IOException {
+		SFFVersion = SFF_V1;
+		//Read header except magic bytes and version info
+		byte hdr[] = new byte[20];
+		sff.readFully(hdr);
+		int image_total = (int)Common.b2ui(hdr, 4, 4); //Offset +20, uint32_t, total image count
+		int file_offset = (int)Common.b2ui(hdr, 8, 4); //Offset +24, uint32_t, subfile offset	
 		//Check records.
 		if(!Common.in_range(image_total, 0, 65535) ||
 			!Common.in_range(file_offset, 0, sff.length() ) ) {
@@ -73,10 +96,9 @@ public class KumoSFFReader {
 			int ilin = (int)Common.b2ui(shdr, 16, 2);
 			int pal = (int)Common.b2ui(shdr, 18, 1); //Offset 18 uint8_t Palette mode 1 or 0
 			//Check parameters
-			if(!Common.in_range(next_off, 0, sff.length() ) ||
+			if(!Common.in_range(next_off, 0, sff.length() ) || 
 				!Common.in_range(file_len, 0, sff.length() ) ||
-				!Common.in_range(ilin, 0, image_total) ||
-				!Common.in_range(pal, 0, 1) ) {
+				!Common.in_range(ilin, 0, image_total) || !Common.in_range(pal, 0, 1) ) {
 				throw new SFFDecodeException(String.format("Bad subheader records on index%d!", i) ,
 					SFFDecodeException.BAD_FILE, i);
 			}
@@ -88,8 +110,8 @@ public class KumoSFFReader {
 			}
 			//Store parameters
 			SFFElements e = new SFFElements();
-			e.image_offset = file_offset + 0x20; //image offset = current subheader offset + 0x20
-			e.image_length = file_len;
+			e.imgoffset = file_offset + 0x20; //image offset = current subheader offset + 0x20
+			e.imglength = file_len;
 			e.x = imgx;
 			e.y = imgy;
 			e.groupid = grp;
@@ -105,6 +127,130 @@ public class KumoSFFReader {
 		if(GetImageCount() != 0) {
 			SharedPal = GetPalette(0);
 		}	
+	}
+	
+	void initSFFv2() throws SFFDecodeException, IOException {
+		SFFVersion = SFF_V2;
+		//Read header except magic bytes and version info
+		byte hdr[] = new byte[52];
+		sff.readFully(hdr);
+		int spr_offset = (int)Common.b2ui(hdr, 20, 4); //offset 36 uint32_t sprite data table offset
+		int spr_count = (int)Common.b2ui(hdr, 24, 4); //offset 40 uint32_t sprite data count
+		int pal_offset = (int)Common.b2ui(hdr, 28, 4); //Offset 44 uint32_t palette data table offset
+		int pal_count = (int)Common.b2ui(hdr, 32, 4); //offset 48 uint32_t palette data count
+		int ldata_offset = (int)Common.b2ui(hdr, 36, 4); //offset 52 uint32_t ldata offset
+		int tdata_offset = (int)Common.b2ui(hdr, 44, 4); //offset 60 uint32_t tdata offset
+		//Check parameters
+		if(!Common.in_range(spr_offset, 0, sff.length() ) || !Common.in_range(spr_count, 0, 65535) ||
+			!Common.in_range(pal_offset, 0, sff.length() ) || !Common.in_range(pal_count, 0, 65535) ||
+			!Common.in_range(ldata_offset, 0, sff.length() )|| 
+			!Common.in_range(tdata_offset, 0, sff.length() ) ) {
+			throw new SFFDecodeException("Bad header records!", 
+				SFFDecodeException.BAD_FILE);
+		}
+		//Read all palette information (feature from sffv2)
+		sff.seek(pal_offset); //seek to the top of palette data table
+		palinfo = new SFFPaletteElement[pal_count];
+		for(int i = 0; i < pal_count; i++) {
+			//read 16 octet (single palette record)
+			byte shdr[] = new byte[16];
+			sff.read(shdr);
+			int grp = (int)Common.b2ui(shdr, 0, 2); //Offset 0 uint16_t palette group number
+			int pno = (int)Common.b2ui(shdr, 2, 2); //Offset 2 uint16_t palette item number
+			int ncol = (int)Common.b2ui(shdr, 4, 2); //Offset 4 uint16_t Element count
+			int lind = (int)Common.b2ui(shdr, 6, 2); //Offset 6 uint16_t link index
+			int fileoff = (int)Common.b2ui(shdr, 8, 4); //Offset 8 uint32_t data offset
+			int filelen = (int)Common.b2ui(shdr, 12, 4); //Offset 8 uint32_t data length
+			SFFPaletteElement e = new SFFPaletteElement();
+			e.groupid = grp;
+			e.paletteid =  pno;
+			e.numcols = ncol;
+			e.linkid = lind;
+			e.paloffset = fileoff + ldata_offset; //Actual palette offset: ldata_offset + this value
+			e.pallength = filelen;
+			//Check file offset and length
+			if(!Common.in_range(e.paloffset, 0, sff.length() - filelen) ) {
+				throw new SFFDecodeException(
+					String.format("Plaette%d: Offset or length is out of file!", i),
+					SFFDecodeException.BAD_SUBFILE, i);
+			}
+			//Check if size is ncol * 4 (palette is uint32_t array.)
+			if(filelen != ncol * 4) {
+				throw new SFFDecodeException(
+					String.format("Plaette%d: Palette data size is weird!", i),
+					SFFDecodeException.BAD_SUBFILE, i);
+			}
+			palinfo[i] = e;
+		}
+		//Read all sprite data
+		sffinfo = new SFFElements[spr_count];
+		sff.seek(spr_offset); //Seek to top of sprite data table
+		for(int i = 0; i < spr_count; i++) {
+			//Read next record, each record is 28 octets long
+			byte[] shdr = new byte[28];
+			sff.readFully(shdr);
+			int grp = (int)Common.b2ui(shdr, 0, 2); //Offset 0 uint16_t Group number
+			int ino = (int)Common.b2ui(shdr, 2, 2); //Offset 2 uint16_t Image number
+			int iwidth = (int)Common.b2ui(shdr, 4, 2); //Offset 4 uint16_t Image width
+			int iheight = (int)Common.b2ui(shdr, 6, 2); //Offset 6 uint16_t Image height
+			int x = Common.b2i16(shdr, 8); //Offset 8 int16_t Center X
+			int y = Common.b2i16(shdr, 10); //Offset 10 int16_t Center Y
+			int lind = (int)Common.b2ui(shdr, 12, 2); //Offset 12 uint16_t link index
+			int imgf = (int)Common.b2ui(shdr, 14, 1); //Offset 14 uint8_t image format type 0~4
+			int cdep = (int)Common.b2ui(shdr, 15, 1); //Offset 15 uint8_t image color depth
+			int file_off = (int)Common.b2ui(shdr, 16, 4); //Offset 16 uint32_t image offset
+			int file_len = (int)Common.b2ui(shdr, 20, 4); //Offset 20 uint32_t image length
+			int pal_index = (int)Common.b2ui(shdr, 24, 2); //Offset 24 uint16_t palette index
+			int flags = (int)Common.b2ui(shdr, 26, 2); //Offset 26 uint16_t falgs
+			//Check parameters
+			if(!Common.in_range(imgf, 0, 4) || !Common.in_range(lind, 0, spr_count) ||
+				!Common.in_range(pal_index, 0, pal_count) ) {
+				throw new SFFDecodeException(
+				String.format("Image %d: Bad image format, link id or palette id."
+				, i) ,SFFDecodeException.BAD_FILE, i);
+			}
+			//if in link mode, link index should not point record itself
+			if(lind == i && file_len == 0) {
+				throw new SFFDecodeException(
+					String.format("Image %d is linked image and pointing itself!", i),
+					SFFDecodeException.BAD_FILE, i);
+			}
+			//Store data
+			SFFElements e = new SFFElements();
+			e.groupid = grp;
+			e.imageid = ino;
+			e.imgwidth = iwidth;
+			e.imgheight = iheight;
+			e.x = x;
+			e.y = y;
+			e.linkid = lind;
+			e.imgtype = imgf;
+			e.colordepth = cdep;
+			e.paletteid = pal_index;
+			e.flags = flags;
+			//Data offset: file_off + ldata_offset (when flag=0), file_off + tdata_offset (when others)
+			if(flags == 0) {
+				e.imgoffset = file_off + ldata_offset;
+			} else {
+				e.imgoffset = file_off + tdata_offset;
+			}
+			e.imglength = file_len;
+			//Check if image offset is in file
+			if(!Common.in_range(e.imgoffset, 0, sff.length() - e.imglength) ) {
+				throw new SFFDecodeException(
+					String.format("Image %d: offset or length is out of file.", i),
+					SFFDecodeException.BAD_FILE, i);
+			}
+			sffinfo[i] = e;
+		}
+	}
+	
+	/**
+		Returns reading sff file format version.
+		@return 1: sffv1 2: sffv2
+	*/
+	public int GetSFFVersion() {
+		return SFFVersion;
 	}
 	
 	/**
@@ -182,20 +328,104 @@ public class KumoSFFReader {
 	*/
 	public int GetLinkState(int imgid) {
 		SFFElements e = sffinfo[imgid];
-		if(e.image_length == 0) {
+		//If image length appars to 0, image is linked one
+		//in sffv2, image type will be 1 (INVALID) too.
+		if(e.imglength == 0) {
 			return e.linkid;
 		}
 		return -1;
 	}
 	
 	/**
-		Returns image mode of image at specified index.
+		SFFv1 only. Returns image mode of image at specified index.
 		@param imgid Image index in order of sff subfiles.
-		@return Shared palette or not.
+		@return Shared palette or not. False if sffv2
 		@throws ArrayIndexOutOfBoundsException when imgid is greater than image count.
 	*/
 	public boolean IsSharedPalette(int imgid) {
+		if(GetSFFVersion() == SFF_V2) { return false; }
 		return sffinfo[imgid].shared;
+	}
+	
+	/**
+		SFFv2 only. Returns image data type of image at specified index.
+		0: RAW, 1: INVALID(Linked) , 2: RLE8, 3: RLE5, 4: LZ5
+		-1: no param (SFFv1, always 256 indexed colour pcx)
+		@param imgid Image index in order of sff subfiles.
+		@return Image type Id, -1 if reading sffv1 (always pcx data type)
+		@throws ArrayIndexOutOfBoundsException when imgid is greater than image count.
+	*/
+	public int SFFv2GetImageType(int imgid) {
+		if(GetSFFVersion() == SFF_V1) {
+			return -1;
+		}
+		return sffinfo[imgid].imgtype;
+	}
+	
+	/**
+		SFFv2 only. Returns colour depth of image at specified index.
+		@param imgid Image index in order of sff subfiles.
+		@return Image colour depth, -1 if reading SFFv1 (Parameter added in sffv2).
+		@throws ArrayIndexOutOfBoundsException when imgid is greater than image count.
+	*/
+	public int SFFv2GetImageColorDepth(int imgid) {
+		if(GetSFFVersion() == SFF_V1) {
+			return -1;
+		}
+		return sffinfo[imgid].colordepth;
+	}
+	
+	/**
+		SFFv2 only. Returns palette index of image at specified index.
+		@param imgid Image index in order of sff subfiles.
+		@return Palette index, -1 if reading SFFv1 (Parameter added in sffv2).
+		@throws ArrayIndexOutOfBoundsException when imgid is greater than image count.
+	*/
+	public int SFFv2GetImagePaletteIndex(int imgid) {
+		if(GetSFFVersion() == SFF_V1) {
+			return -1;
+		}
+		return sffinfo[imgid].paletteid;
+	}
+	
+	/**
+		SFFv2 only Returns size of image at specified index
+		@param imgid Image index in order of sff subfiles.
+		@return dimension of image, null if reading SFFv1 (Parameter added in sffv2).
+		@throws ArrayIndexOutOfBoundsException when imgid is greater than image count.
+	*/
+	public Dimension SFFv2GetImageSize(int imgid) {
+		SFFElements e = sffinfo[imgid];
+		if(GetSFFVersion() == SFF_V1) {
+			return null;
+		}
+		return new Dimension(e.imgwidth, e.imgheight);
+	}
+	
+	/**
+		SFFv2 only. Returns image width of image at specified index
+		@param imgid Image index in order of sff subfiles.
+		@return width of image, -1 if reading SFFv1 (Parameter added in sffv2).
+		@throws ArrayIndexOutOfBoundsException when imgid is greater than image count.
+	*/
+	public int SFFv2GetImageWidth(int imgid) {
+		if(GetSFFVersion() == SFF_V1) {
+			return -1;
+		}
+		return sffinfo[imgid].imgwidth;
+	}
+	
+	/**
+		SFFv2 only Returns image height of image at specified index
+		@param imgid Image index in order of sff subfiles.
+		@return height of image, -1 if reading SFFv1 (Parameter added in sffv2).
+		@throws ArrayIndexOutOfBoundsException when imgid is greater than image count.
+	*/
+	public int SFFv2GetImageHeight(int imgid) {
+		if(GetSFFVersion() == SFF_V1) {
+			return -1;
+		}
+		return sffinfo[imgid].imgheight;
 	}
 	
 	/**
@@ -215,21 +445,25 @@ public class KumoSFFReader {
 			return GetRawImage(linkstate); //Recursive call
 		} else {
 			//actual image. read data.
-			r = new byte[e.image_length];
-			sff.seek(e.image_offset);
+			r = new byte[e.imglength];
+			sff.seek(e.imgoffset);
 			sff.readFully(r);
 		}
 		return r;
 	}
 	
 	/**
-		Returns palette data of image at specified index
-		@param imgid Image index in order of sff subfiles.
+		SFFv1 only. Returns palette data of image at specified index
+		@param imgid Image index in order of sff subfiles. null if reading sffv2.
 		@return 256 color palette int[], ARGB8888.
 		@throws ArrayIndexOutOfBoundsException when imgid is greater than image count.
 		@throws IOException when IO Error occured.
 	*/
 	public int[] GetPalette(int imgid) throws IOException {
+		//SFFv1 only, return if v2,
+		if(GetSFFVersion() == SFF_V2) {
+			return null;
+		}
 		byte data[] = GetRawImage(imgid);
 		//If PCX is shorter than header + palette length, maybe no palette
 		if(data.length < 128 + 769) {
@@ -339,6 +573,74 @@ public class KumoSFFReader {
 	}
 	
 	/**
+		SFFv2 only. Returns link id of palette at specified index.
+		Returns -1 if the palette is not linked one, or reading sffv1.
+		@param palid Palette index in order of sff subfiles.
+		@return if image is linked, destination image index. or -1 if not linked or sffv1.
+		@throws ArrayIndexOutOfBoundsException when imgid is greater than image count.
+	*/
+	public int SFFv2GetPaletteLinkState(int palid) {
+		SFFPaletteElement e = palinfo[palid];
+		if(GetSFFVersion() == SFF_V2) {
+			return -1;
+		}
+		//If palette length appars to 0, palette is linked one
+		if(e.pallength == 0) {
+			return e.linkid;
+		}
+		return -1;
+	}
+	
+	/**
+		SFFv2 only. Returns color count of palette at specified index.
+		Returns -1 if reading sffv1.
+		@param pal Palette index in order of sff subfiles.
+		@return Palette colour count, or -1 if reading sffv1
+		@throws ArrayIndexOutOfBoundsException when imgid is greater than image count.
+	*/
+	public int SFFv2GetPaletteSize(int palid) {
+		if(GetSFFVersion() == SFF_V1) {
+			return -1;
+		}
+		return palinfo[palid].numcols;
+	}
+	
+	/**
+		SFFv2 only. Get palette data of specified index then convert it ARGB8888 int[]
+		@param palid Palette index in order of sff subfiles.
+		@return Palette data, int[], in order of colour index, each element is ARGB8888
+		@throws ArrayIndexOutOfBoundsException when palid is greater than palette count.
+		@throws IOException when IO Error occured.
+		@throws EOFException when image data is shorter than excepted.
+	*/
+	public int[] SFFv2GetPalette(int palid) throws IOException {
+		//SFFv2 only, return if v1
+		if(GetSFFVersion() == SFF_V1) {
+			return null;
+		}
+		int linkstate = SFFv2GetPaletteLinkState(palid);
+		if(linkstate != -1) {
+			return SFFv2GetPalette(linkstate);
+		}
+		SFFPaletteElement e = palinfo[palid];
+		//seek to palette data offset
+		sff.seek(e.paloffset);
+		//read palette
+		byte data[] = new byte[e.pallength];
+		sff.readFully(data);
+		//decode palette, it is ARGB8888 array
+		int[] _r = new int[SFFv2GetPaletteSize(palid)];
+		for(int i = 0; i < _r.length; i++) {
+			int r = (int)Common.b2ui(data, i * 4, 1); //uint8_t red
+			int g = (int)Common.b2ui(data, i * 4 + 1, 1); //uint8_t green
+			int b = (int)Common.b2ui(data, i * 4 + 2, 1); //uint8_t blue
+			_r[i] = (r << 16) + (g << 8) + b;
+			if(i != 0) {_r[i] += 0xff000000;} //index0 is always alpha=0 (transparent)
+		}
+		return _r;
+	}
+	
+	/**
 		Find image index by group number and image number
 		Returns -1 when not found. if not -1, it is image index that
 		has specified group number and image number
@@ -374,53 +676,38 @@ public class KumoSFFReader {
 		}
 		return r;
 	}
-	/*
+	
 	//test
 	public static void main(String args[]) throws Exception {
 		//Open SFF
-		KumoSFFReader sr = new KumoSFFReader("/mnt_hdd/owner/Desktop/mugen-1.1b1/chars/9/gy.sff");
-		byte sp[] = new byte[769]; //Shared palette data
-		//Process all images in sff
-		for(int i = 0; i < sr.GetImageCount(); i++) {
-			//Get Raw Image data of index i in sff
-			byte d[] = sr.GetRawImageData(i);
-			//Index0 image has shared palette data and get it
-			if(i == 0) {
-				if(d[d.length - 769] != 12) {
-					throw new Exception("test fail: index0 does not contain pal.");
-				}
-				System.arraycopy(d, d.length - 769, sp, 0, 769);
-			}
-			//Include image information in filename
-			int gid = sr.GetGroupNumber(i);
-			int iid = sr.GetImageNumber(i);
-			Point ip = sr.GetCoordinate(i);
-			String fs = String.format("Image%d of %d %d, %d %dx%d", i,
-							sr.GetImageCount() - 1, gid, iid, (int)ip.getX(), (int)ip.getY());
-			//Output to file
-			FileOutputStream f = new FileOutputStream(
-											String.format("/mnt_hdd/owner/Desktop/output/%s.pcx", fs));
-			//For shared palette image, delete existing palette (if contained),
-			//then append index0 palette
-			if(sr.IsSharedPalette(i)) {
-				if(d[d.length - 769] == 12) {
-					f.write(d, 0, d.length - 769);
-				} else {
-					f.write(d);
-				}
-				f.write(sp);
+		KumoSFFReader sr = new KumoSFFReader(args[0]);
+		//Get 9000, 0 Image (Small Portrait)
+		int i = sr.FindIndexByNumbers(9000, 0);
+		if(i == -1) {
+			System.out.println("Portrait not found.");
+		} else {
+			if(sr.GetSFFVersion() == SFF_V1) {
+				BufferedImage b = sr.ConvertImage(i);
+				ImageIO.write(b, "png", new File("sample.png"));
 			} else {
-				//If nonshared, output without process
-				f.write(d);
+				byte raw[] = sr.GetRawImage(i);
+				int pal[] = sr.SFFv2GetPalette(sr.SFFv2GetImagePaletteIndex(i) );
+				FileOutputStream f = new FileOutputStream("sample.raw");
+				f.write(raw);
+				f.close();
+				BufferedWriter f2 = new BufferedWriter(new FileWriter("sample.act") );
+				for(int j = 0;j < pal.length; j++) {
+					f2.write(String.format("#%08x\n", pal[j]) );
+				}
+				f2.close();
 			}
-			System.out.println(i);
 		}
 		sr.closeSFF(); //close
 	}
-	*/
 	
 	/**
 		Return library version string.
+		@return Version string
 	*/
 	public static String GetLibVersion() {
 		return VER;
@@ -428,6 +715,7 @@ public class KumoSFFReader {
 	
 	/**
 		Returns library information string
+		@return Library information string
 	*/
 	public static String GetLibInformation() {
 		String s = "KumoSFFReader (C) 2023 Kumohakase\n" + 

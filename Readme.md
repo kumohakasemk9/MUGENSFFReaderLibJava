@@ -40,10 +40,11 @@ Data getter:
 - byte\[\] GetRawImage(int imgid)   
 Returns raw image (in sffv1, it is raw pcx) of the image at index imgid
 - BufferedImage ConvertImage(int imgid)   
-Returns java.awt.image.BufferedImage object of the image at index imgid
+Returns java.awt.image.BufferedImage object of the image at index imgid   
+Currently sffv1 only   
 - int\[\] GetPalette(int imgid)   
 Returns 256 colour palette (Array of ARGB8888 in order of colour index)    
- of the image at index imgid
+ of the image at index imgid. sffv1 only, returns null if called when sffv2 mode.   
   
 Searchers:   
 - int FindIndexByNumbers(int grp, int ino)   
@@ -52,8 +53,10 @@ then returns index, -1 if not found.
 - int ListIndexesByGroupNo(int grp)   
 Find images having the same group number as grp,   
 then returns indexes. Returning array will be sorted by index, not by Image Number.  
-  
+
 Other functions:  
+- GetSFFVersion()   
+Returns 1 when reading sffv1, 2 when sffv2.  
 - closeSFF()   
 Call it when application exit. Buffering all image data and calling it is recommended.   
 (sff file is closed but you can still get sff information, but you can not do   
@@ -62,6 +65,26 @@ Data getter Functions )
 Returns version string
 - GetLibInformation()   
 Returns Library information string
+
+SFFv2 only functions:   
+These functions will return null, -1 or jiberrish when reder is reading sffv1   
+- int SFFv2GetImageColorDepth(int imgid)   
+Returns color depth of image at index imgid, usually 8 for 256 index color image   
+- int SFFv2GetImageHeight(int imgid)
+- int SFFv2GetImageWidth(int imgid) 
+- java.awt.Dimension SFFv2GetImageSize(int imgid)   
+Returns image size information of image   
+- int SFFv2GetImageType(int imgid)
+Returns image compression method.   
+0: Raw 1: Invalid(Linked) 2: RLE8 3: RLE5 4: LZ5   
+- int SFFv2GetImagePaletteIndex(int imgid)
+Returns palette index associated with image    
+- int\[\] SFFv2GetPalette(int palid)
+Returns colour palette (array of ARGB888) of palette at index palid    
+- int SFFv2GetPaletteLinkedState(int palid)   
+Returns palette linked id if palette is linked, otherwise -1    
+- int SFFv2GetPaletteSize(int palid)
+Returns palette color count    
 
 You can generate javadoc         
 
