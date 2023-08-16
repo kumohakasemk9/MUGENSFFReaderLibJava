@@ -600,7 +600,7 @@ public class KumoSFFReader {
 	/**
 		SFFv2 only. Returns color count of palette at specified index.
 		Returns -1 if reading sffv1.
-		@param pal Palette index in order of sff subfiles.
+		@param palid Palette index in order of sff subfiles.
 		@return Palette colour count, or -1 if reading sffv1
 		@throws ArrayIndexOutOfBoundsException when imgid is greater than image count.
 	*/
