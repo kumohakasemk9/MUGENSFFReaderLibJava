@@ -33,6 +33,13 @@ public class KumoSFFReader {
 	/** LZ5 format image */
 	public static final int SFFV2_IMGTYPE_LZ5 = 4; 
 	
+	/** PNG8 format image */
+	public static final int SFFv21_IMGTYPE_PNG8 = 10;
+	/** PNG24 format image */
+	public static final int SFFv21_INGTYPE_PNG24 = 11;
+	/** PNG32 format image */
+	public static final int SFFv21_INGTYPE_PNG32 = 12;
+	
 	/**
 		Open SFF and cache some basic information
 		@param filename SFF filename to open
@@ -166,7 +173,7 @@ public class KumoSFFReader {
 			int ncol = (int)Common.b2ui(shdr, 4, 2); //Offset 4 uint16_t Element count
 			int lind = (int)Common.b2ui(shdr, 6, 2); //Offset 6 uint16_t link index
 			int fileoff = (int)Common.b2ui(shdr, 8, 4); //Offset 8 uint32_t data offset
-			int filelen = (int)Common.b2ui(shdr, 12, 4); //Offset 8 uint32_t data length
+			int filelen = (int)Common.b2ui(shdr, 12, 4); //Offset 12 uint32_t data length
 			SFFPaletteElement e = new SFFPaletteElement();
 			e.groupid = grp;
 			e.paletteid =  pno;
@@ -209,7 +216,8 @@ public class KumoSFFReader {
 			int pal_index = (int)Common.b2ui(shdr, 24, 2); //Offset 24 uint16_t palette index
 			int flags = (int)Common.b2ui(shdr, 26, 2); //Offset 26 uint16_t falgs
 			//Check parameters
-			if(!Common.in_range(imgf, 0, 4) || !Common.in_range(lind, 0, spr_count) ||
+			if(!(Common.in_range(imgf, 0, 4) || Common.in_range(imgf, 10, 12) ) ||
+				!Common.in_range(lind, 0, spr_count) ||
 				!Common.in_range(pal_index, 0, pal_count) ) {
 				throw new SFFDecodeException(
 				String.format("Image %d: Bad image format, link id or palette id."
@@ -426,6 +434,7 @@ public class KumoSFFReader {
 	/**
 		SFFv2 only. Returns image data type of image at specified index.
 		0: RAW, 1: INVALID(Linked) , 2: RLE8, 3: RLE5, 4: LZ5
+		10: PNG8 11: PNG24 12:PNG32
 		-1: no param (SFFv1, always 256 indexed colour pcx)
 		@param imgid Image index in order of sff subfiles.
 		@return Image type Id, -1 if reading sffv1 (always pcx data type)
