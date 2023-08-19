@@ -1,6 +1,6 @@
 # KumoSFFReader
 This library provides function reading MUGEN sff imagearray   
-Now with sffv2 beta support (Raw data out only)   
+Now with sffv2 beta support (Only supports RAW8 and RLE8, PNG is not yet)   
 file format made by Elecbyte  
 Written in Java.   
    
@@ -22,6 +22,8 @@ Same but accepts java.io.File as file pointer
 Information getter:   
 - int GetImageCount()   
 Get total image count in sff
+- int SFFv2GetPaletteCount() sffv2 only    
+Returns total palette count in sffv2, always 0 if sffv1   
 - int GetGroupNumber(int imgid)   
 Get Group Number parameter of yhe image at index imgid
 - int GetImageNumber(int imgid)   
@@ -57,7 +59,7 @@ Data getter:
 Returns raw image (in sffv1, it is raw pcx) of the image at index imgid
 - BufferedImage ConvertImage(int imgid) SFFv1 only  
 Returns java.awt.image.BufferedImage object of the image at index imgid   
-- int\[\] GetPalette(int imgid) SFFv1 only  
+- int\[\] GetPalette(int imgid) 
 Returns 256 colour palette (Array of ARGB8888 in order of colour index)    
  of the image at index imgid.  
 - int\[\] SFFv2GetPalette(int palid) SFFv2 only  
@@ -96,5 +98,6 @@ CC BY-SA https://creativecommons.org/licenses/by-sa/4.0/
 Please consider supporting me https://ko-fi.com/kumohakase  
 
 # Todo
-- RLE8, RLE5, LZ5 decode
+- RAW24, RAW32, LZ5, RLE5 decode (ConvertImage() )
+- PNG8, PNG24, PNG32 decode (ConvertImage(), sffv2.1 feature)
 - Set external palette

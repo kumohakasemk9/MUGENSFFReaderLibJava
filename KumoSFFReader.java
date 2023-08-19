@@ -251,6 +251,76 @@ public class KumoSFFReader {
 		}
 	}
 	
+	//internal function to decode RLE8 image
+	BufferedImage SFFv2DecodeRLE8Image(byte[] data, int imgw, int imgh, int[] pal, int ind)
+		throws SFFDecodeException, IOException {
+		BufferedImage img = new BufferedImage(imgw, imgh, BufferedImage.TYPE_INT_ARGB);
+		int x = 0;
+		int y = 0;
+		int rl = -1;
+		//first 4 octet represents uncompressed length of data
+		//and it must be the same as imgw * imgh
+		//and RLE8 is always for 256 indexed colour
+		if(data.length < 4) {
+			throw new EOFException(String.format("%d: RLE8 image data too short!", ind) );
+		}
+		int rawsize = (int)Common.b2ui(data, 0, 4);
+		if(rawsize != imgw * imgh) {
+			throw new SFFDecodeException(String.format("%d: RLE8 image uncompressed octet count is wrong!"),
+				SFFDecodeException.BAD_SUBFILE, ind);
+		}
+		for(int c = 0;c < data.length - 4; c++) {
+			int e = Byte.toUnsignedInt(data[c + 4]); //get 1 compressed octet
+			//0b01xxxxxx is runlength, otherwise raw data
+			if((e & 0xc0) != 0x40 || rl != -1) {
+				//if not runlength or octet after runlength
+				if(rl == -1) {
+					rl = 1; //always assume runlength = 1
+				}
+				//Add pixel for runlength times
+				for(int ii = 0; ii < rl; ii++) {
+					int clr = pal[e];
+					img.setRGB(x, y, clr);
+					//advance x, we can use simple ++ method because java.awt.image.BufferedImage and sffv2 RLE8 has
+					//same coordinate system
+					x++;
+					if(x >= imgw) {
+						y++;
+						x = 0;
+						if(y >= imgh) { break; } //if y pointer reached to end, break loop
+					}
+				}
+				rl = -1;
+				if(y >= imgh) {break;} //if y pointer reached to end, break loop
+			} else {
+				rl = e - 0x40; //if e was 0b01xxxxxx, e - 0x40 is runlen.
+			}
+		}
+		return img;
+	}
+	
+	//Internal function to decode raw image to BufferedImage
+	BufferedImage SFFv2DecodeRawImage(byte data[], int imgw, int imgh, int cdep, int pal[], int ind)
+		throws SFFDecodeException, IOException {
+		//Colordepth must be 8 (256 color index) or 24 (RGB888) or 32 (ARGB8888)
+		//Currently, colordepth=24 or 32 is unsupported
+		if(cdep != 8) {
+			throw new SFFDecodeException(String.format("%d: Bad colordepth! (accepted values: 8)", ind),
+				SFFDecodeException.BAD_SUBFILE, ind);
+		}
+		int colorocts = cdep / 8; //octet per pixel
+		int x = 0;
+		int y = 0;
+		BufferedImage img = new BufferedImage(imgw, imgh, BufferedImage.TYPE_INT_ARGB);
+		//Raw data format is simple array of {cdep} bit ints
+		for(int i = 0; i < data.length / colorocts; i++) {
+			//currently supports raw 8 bit colordepth (256 index color only)
+			int e = Byte.toUnsignedInt(data[i]);
+			img.setRGB(x, y, pal[e]);
+		}
+		return img;
+	}
+	
 	/**
 		Returns reading sff file format version.
 		@return 1: sffv1 2: sffv2
@@ -460,13 +530,13 @@ public class KumoSFFReader {
 	
 	/**
 		SFFv1 only. Returns palette data of image at specified index
-		@param imgid Image index in order of sff subfiles. null if reading sffv2.
+		@param imgid Image index in order of sff subfiles. null if SFFv2.
 		@return 256 color palette int[], ARGB8888.
 		@throws ArrayIndexOutOfBoundsException when imgid is greater than image count.
 		@throws IOException when IO Error occured.
 	*/
 	public int[] GetPalette(int imgid) throws IOException {
-		//SFFv1 only, return if v2,
+		//SFFv2 will use different method to store palette..
 		if(GetSFFVersion() == SFF_V2) {
 			return null;
 		}
@@ -484,13 +554,10 @@ public class KumoSFFReader {
 		int pal[] = new int[256];
 		//Decode palette, palette is 256 count array of RGB888 values 
 		for(int i = 0; i < 256; i++) {
-			int r = (int)Common.b2ui(data, i * 3 + paloff + 1, 1);
-			int g = (int)Common.b2ui(data, i * 3 + paloff + 2, 1);
-			int b = (int)Common.b2ui(data, i * 3 + paloff + 3, 1);
+			pal[i] = (int)Common.b2uibe(data, paloff + (i * 3) + 1, 3); //get RGB888 value
 			//convert to ARGB8888
 			//index 0 colour is always transparent, alpha=255 except index 0
 			if(i != 0) {pal[i] += 0xff000000;}
-			pal[i] += (r << 16) + (g << 8) + b;
 		}
 		return pal;
 	}
@@ -502,10 +569,42 @@ public class KumoSFFReader {
 		@throws ArrayIndexOutOfBoundsException when imgid is greater than image count.
 		@throws IOException when IO Error occured.
 		@throws EOFException when image data is shorter than excepted.
-		@throws SFFDecodeException when palette data is missing but needed or when pcx file format is
-											not suitable for MUGEN.
+		@throws SFFDecodeException when image format was bad.
 	*/
-	public BufferedImage ConvertImage(int imgid) throws IOException, SFFDecodeException {
+	public BufferedImage ConvertImage(int imgid)  throws IOException, SFFDecodeException {
+		if(GetSFFVersion() == SFF_V1) {
+			//SFFv1 allows only pcx, decode.
+			return DecodePCXImage(imgid);
+		} else if(GetSFFVersion() == SFF_V2) {
+			//SFFv2, uncompressed, rle5, lz5, rle8, png8, png24 and png32 are possible
+			//if image is linked, forward link
+			int linkstate = GetLinkState(imgid);
+			if(linkstate != -1) {
+				return ConvertImage(linkstate);
+			}
+			//Get palette
+			int palind = SFFv2GetImagePaletteIndex(imgid);
+			int pal[] = SFFv2GetPalette(palind);
+			//Get image information
+			int imgw = SFFv2GetImageWidth(imgid);
+			int imgh = SFFv2GetImageHeight(imgid);
+			int imgc = SFFv2GetImageColorDepth(imgid);
+			int imgt = SFFv2GetImageType(imgid);
+			byte data[] = GetRawImage(imgid); //Get raw image data
+			//Currently rle8 and uncompressed are supported format
+			if(imgt == SFFV2_IMGTYPE_RAW) {
+				return SFFv2DecodeRawImage(data, imgw, imgh, imgc, pal, imgid);
+			} else if(imgt == SFFV2_IMGTYPE_RLE8) {
+				return SFFv2DecodeRLE8Image(data, imgw, imgh, pal, imgid);
+			} else {
+				throw new SFFDecodeException(String.format("%d: Bad format or unsupported: type%d depth%d", imgid, imgt, imgc),
+					SFFDecodeException.BAD_SUBFILE, imgid);
+			}
+		}
+		return null; //Unreachable
+	}
+	
+	BufferedImage DecodePCXImage(int imgid) throws IOException, SFFDecodeException {
 		byte data[] = GetRawImage(imgid);
 		int pal[];
 		if(data.length < 128) {
@@ -612,6 +711,18 @@ public class KumoSFFReader {
 	}
 	
 	/**
+		SFFv2 only. Returns total palette count.
+		Returns 0 if reading sffv1.
+		@return Palette count, or 0 if reading sffv1
+	*/
+	public int SFFv2GetPaletteCount() {
+		if(GetSFFVersion() == SFF_V1) {
+			return 0;
+		}
+		return palinfo.length;
+	}
+	
+	/**
 		SFFv2 only. Get palette data of specified index then convert it ARGB8888 int[]
 		@param palid Palette index in order of sff subfiles.
 		@return Palette data, int[], in order of colour index, each element is ARGB8888
@@ -634,14 +745,13 @@ public class KumoSFFReader {
 		//read palette
 		byte data[] = new byte[e.pallength];
 		sff.readFully(data);
-		//decode palette, it is ARGB8888 array
+		//decode palette, it is RGBA8888 array
 		int[] _r = new int[SFFv2GetPaletteSize(palid)];
 		for(int i = 0; i < _r.length; i++) {
-			int r = (int)Common.b2ui(data, i * 4, 1); //uint8_t red
-			int g = (int)Common.b2ui(data, i * 4 + 1, 1); //uint8_t green
-			int b = (int)Common.b2ui(data, i * 4 + 2, 1); //uint8_t blue
-			_r[i] = (r << 16) + (g << 8) + b;
-			if(i != 0) {_r[i] += 0xff000000;} //index0 is always alpha=0 (transparent)
+			//Converting RGBA8888 to ARGB8888
+			_r[i] = (int)Common.b2uibe(data, i * 4, 3); //GET RGB888
+			//alpha=255 except index 0
+			if(i != 0) { _r[i] = _r[i] + 0xff000000; }
 		}
 		return _r;
 	}
@@ -684,32 +794,25 @@ public class KumoSFFReader {
 	}
 	
 	/**
-		for test, currently outputs 9000, 0 image of specified sff as output.png or
+		for test, currently outputs 0, 0 image of specified sff as output.png or
 		output.raw and output.act combo.
 	*/
 	public static void main(String args[]) throws Exception {
 		//Open SFF
 		KumoSFFReader sr = new KumoSFFReader(args[0]);
-		//Get 9000, 0 Image (Small Portrait)
-		int i = sr.FindIndexByNumbers(9000, 0);
+		//Get 0, 0 Image (Small Portrait)
+		int i = sr.FindIndexByNumbers(9000, 1);
 		if(i == -1) {
-			System.out.println("Portrait not found.");
-		} else {
-			if(sr.GetSFFVersion() == SFF_V1) {
-				BufferedImage b = sr.ConvertImage(i);
-				ImageIO.write(b, "png", new File("sample.png"));
-			} else {
-				byte raw[] = sr.GetRawImage(i);
-				int pal[] = sr.SFFv2GetPalette(sr.SFFv2GetImagePaletteIndex(i) );
-				FileOutputStream f = new FileOutputStream("sample.raw");
-				f.write(raw);
-				f.close();
-				BufferedWriter f2 = new BufferedWriter(new FileWriter("sample.act") );
-				for(int j = 0;j < pal.length; j++) {
-					f2.write(String.format("#%08x\n", pal[j]) );
-				}
-				f2.close();
-			}
+			i = sr.FindIndexByNumbers(9000, 0);
+		}
+		if(i != -1) {
+			BufferedImage b = sr.ConvertImage(i);
+			ImageIO.write(b, "png", new File("output.png"));
+		}
+		System.out.printf("Total image count: %d\n", sr.GetImageCount() );
+		if(sr.GetSFFVersion() == SFF_V2) {
+			System.out.println("SFF Version 2");
+			System.out.printf("Total palette count: %d\n", sr.SFFv2GetPaletteCount());
 		}
 		sr.closeSFF(); //close
 	}

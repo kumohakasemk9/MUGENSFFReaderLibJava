@@ -10,6 +10,15 @@ public class Common {
 		return r;
 	}
 	
+	//b2ui but big endian version, max len limit is 4
+	public static long b2uibe(byte[] data, int offs, int len) {
+		long r = 0;
+		for(int i = 0; i < len; i++) {
+			r += Byte.toUnsignedInt(data[i + offs]) << ( (len - i - 1) * 8);
+		}
+		return r;
+	}
+	
 	//Signed 16bit version of b2ui
 	public static int b2i16(byte data[], int offs) {
 		int r = (int)b2ui(data, offs, 2);
