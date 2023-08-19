@@ -34,11 +34,11 @@ public class KumoSFFReader {
 	public static final int SFFV2_IMGTYPE_LZ5 = 4; 
 	
 	/** PNG8 format image */
-	public static final int SFFv21_IMGTYPE_PNG8 = 10;
+	public static final int SFFV21_IMGTYPE_PNG8 = 10;
 	/** PNG24 format image */
-	public static final int SFFv21_INGTYPE_PNG24 = 11;
+	public static final int SFFV21_INGTYPE_PNG24 = 11;
 	/** PNG32 format image */
-	public static final int SFFv21_INGTYPE_PNG32 = 12;
+	public static final int SFFV21_INGTYPE_PNG32 = 12;
 	
 	/**
 		Open SFF and cache some basic information
