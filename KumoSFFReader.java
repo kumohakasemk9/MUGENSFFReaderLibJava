@@ -610,14 +610,17 @@ public class KumoSFFReader {
 			if(linkstate != -1) {
 				return ConvertImage(linkstate);
 			}
-			//Get palette
-			int palind = SFFv2GetImagePaletteIndex(imgid);
-			int pal[] = SFFv2GetPalette(palind);
 			//Get image information
 			int imgw = SFFv2GetImageWidth(imgid);
 			int imgh = SFFv2GetImageHeight(imgid);
 			int imgc = SFFv2GetImageColorDepth(imgid);
 			int imgt = SFFv2GetImageType(imgid);
+			//Get palette (only for index colored image)
+			int pal[] = null;
+			if(imgc == 8) {
+				int palind = SFFv2GetImagePaletteIndex(imgid);
+				pal = SFFv2GetPalette(palind);
+			}
 			byte data[] = GetRawImage(imgid); //Get raw image data
 			//Currently rle8 and uncompressed are supported format
 			if(imgt == SFFV2_IMGTYPE_RAW) {
