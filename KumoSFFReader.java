@@ -311,7 +311,7 @@ public class KumoSFFReader {
 	BufferedImage SFFv2DecodeRawImage(byte data[], int imgw, int imgh, int cdep, int pal[], int ind)
 		throws SFFDecodeException, IOException {
 		//Colordepth must be 8 (256 color index) or 24 (RGB888) or 32 (ARGB8888)
-		if(cdep != 8 || cdep != 24 || cdep != 32) {
+		if(cdep != 8 && cdep != 24 && cdep != 32) {
 			throw new SFFDecodeException(String.format("%d: Bad colordepth! (accepted values: 8, 24 and 32)", ind),
 				SFFDecodeException.BAD_SUBFILE, ind);
 		}
@@ -321,9 +321,29 @@ public class KumoSFFReader {
 		BufferedImage img = new BufferedImage(imgw, imgh, BufferedImage.TYPE_INT_ARGB);
 		//Raw data format is simple array of {cdep} bit ints
 		for(int i = 0; i < data.length / colorocts; i++) {
-			//currently supports raw 8 bit colordepth (256 index color only)
-			int e = Byte.toUnsignedInt(data[i]);
-			img.setRGB(x, y, pal[e]);
+			int c = 0;
+			if(cdep == 8) {
+				//256 index color (convert to ARGB8888 with palette)
+				int e = Byte.toUnsignedInt(data[i]);
+				c = pal[e];
+			} else if(cdep == 24) {
+				//24bit RGB888 (convert to ARGB8888)
+				c = (int)Common.b2uibe(data, i * 3, 3) + 0xff000000;
+			} else {
+				//32bit RGBA8888 (convert to ARGB8888)
+				//System.out.printf("%08x\n", (int)Common.b2uibe(data, i * 4, 4) );
+				c = (int)Common.b2uibe(data, i * 4, 3); //rgb888
+				c += Byte.toUnsignedInt(data[i * 4 + 3]) << 24; //alpha
+				
+			}
+			img.setRGB(x, y, c);
+			//Advance x, if x reaches end of line, reset x and advance y
+			x++;
+			if(x >= imgw) {
+				x = 0;
+				y++;
+				if(y >= imgh) { break; } //filled all line
+			}
 		}
 		return img;
 	}
