@@ -311,7 +311,7 @@ public class KumoSFFReader {
 	BufferedImage SFFv2DecodeRawImage(byte data[], int imgw, int imgh, int cdep, int pal[], int ind)
 		throws SFFDecodeException, IOException {
 		//Colordepth must be 8 (256 color index) or 24 (RGB888) or 32 (ARGB8888)
-		if(cdep != 8 && cdep != 24 || cdep != 32) {
+		if(cdep != 8 || cdep != 24 || cdep != 32) {
 			throw new SFFDecodeException(String.format("%d: Bad colordepth! (accepted values: 8, 24 and 32)", ind),
 				SFFDecodeException.BAD_SUBFILE, ind);
 		}
