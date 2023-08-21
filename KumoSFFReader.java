@@ -4,6 +4,7 @@ import java.io.*;
 import java.awt.image.*;
 import java.awt.*;
 import javax.imageio.*;
+import java.util.*;
 import kumotechmadlab.sffreader.*;
 
 /** SFF Reader class */
@@ -12,7 +13,7 @@ public class KumoSFFReader {
 	SFFElements sffinfo[];
 	SFFPaletteElement palinfo[];
 	int SharedPal[] = null;
-	final static String VER = "Build-AUG162023";
+	final static String VER = "v1.5.0 - AUG212023";
 	final byte IDENT[] = {'E', 'l', 'e', 'c', 'b', 'y', 't', 'e', 'S', 'p', 'r', 0};
 	final byte VER_V1[] = {0, 1, 0, 1};
 	final byte VER_V2[] = {0, 0, 0, 2};
@@ -184,15 +185,17 @@ public class KumoSFFReader {
 			//Check file offset and length
 			if(!Common.in_range(e.paloffset, 0, sff.length() - filelen) ) {
 				throw new SFFDecodeException(
-					String.format("Plaette%d: Offset or length is out of file!", i),
+					String.format("Palette%d: Offset or length is out of file!", i),
 					SFFDecodeException.BAD_SUBFILE, i);
 			}
 			//Check if size is ncol * 4 (palette is uint32_t array.)
-			if(filelen != ncol * 4) {
-				throw new SFFDecodeException(
-					String.format("Plaette%d: Palette data size is weird!", i),
-					SFFDecodeException.BAD_SUBFILE, i);
-			}
+			//Disabled check func because there is a size != ncol * 4
+			//is sometimes correct
+			//if(filelen != ncol * 4) {
+			//	throw new SFFDecodeException(
+			//		String.format("Palette%d: Palette data size is weird!", i),
+			//		SFFDecodeException.BAD_SUBFILE, i);
+			//}
 			palinfo[i] = e;
 		}
 		//Read all sprite data
@@ -602,42 +605,89 @@ public class KumoSFFReader {
 	public BufferedImage ConvertImage(int imgid)  throws IOException, SFFDecodeException {
 		if(GetSFFVersion() == SFF_V1) {
 			//SFFv1 allows only pcx, decode.
-			return DecodePCXImage(imgid);
+			return DecodePCXImage(imgid, null);
 		} else if(GetSFFVersion() == SFF_V2) {
-			//SFFv2, uncompressed, rle5, lz5, rle8, png8, png24 and png32 are possible
-			//if image is linked, forward link
-			int linkstate = GetLinkState(imgid);
-			if(linkstate != -1) {
-				return ConvertImage(linkstate);
-			}
-			//Get image information
-			int imgw = SFFv2GetImageWidth(imgid);
-			int imgh = SFFv2GetImageHeight(imgid);
-			int imgc = SFFv2GetImageColorDepth(imgid);
-			int imgt = SFFv2GetImageType(imgid);
-			//Get palette (only for index colored image)
-			int pal[] = null;
-			if(imgc == 8) {
-				int palind = SFFv2GetImagePaletteIndex(imgid);
-				pal = SFFv2GetPalette(palind);
-			}
-			byte data[] = GetRawImage(imgid); //Get raw image data
-			//Currently rle8 and uncompressed are supported format
-			if(imgt == SFFV2_IMGTYPE_RAW) {
-				return SFFv2DecodeRawImage(data, imgw, imgh, imgc, pal, imgid);
-			} else if(imgt == SFFV2_IMGTYPE_RLE8) {
-				return SFFv2DecodeRLE8Image(data, imgw, imgh, pal, imgid);
-			} else {
-				throw new SFFDecodeException(String.format("%d: Bad format or unsupported: type%d depth%d", imgid, imgt, imgc),
-					SFFDecodeException.BAD_SUBFILE, imgid);
-			}
+			return SFFv2DecodeImage(imgid, null);
 		}
 		return null; //Unreachable
 	}
 	
-	BufferedImage DecodePCXImage(int imgid) throws IOException, SFFDecodeException {
+	/**
+		Get image data of specified index then convert it to BufferedImage
+		using specified palette data. Only for colordepth <= 8 images.
+		if colordepth > 8, pal[] will not be used.
+		@param imgid Image index in order of sff subfiles.
+		@param pal[] palette data, ARGB8888 array.
+		@return BufferedImage, formatted in TYPE_INT_ARGB32.
+		@throws ArrayIndexOutOfBoundsException when imgid is greater than image count.
+		@throws IOException when IO Error occured.
+		@throws EOFException when image data is shorter than excepted.
+		@throws SFFDecodeException when image format was bad.
+	*/
+	public BufferedImage ConvertImage(int imgid, int pal[])  throws IOException, SFFDecodeException {
+		if(GetSFFVersion() == SFF_V1) {
+			//SFFv1 allows only pcx, decode.
+			return DecodePCXImage(imgid, pal);
+		} else if(GetSFFVersion() == SFF_V2) {
+			return SFFv2DecodeImage(imgid, pal);
+		}
+		return null; //Unreachable
+	}
+	
+	//Internal function to decode sffv2 image data
+	BufferedImage SFFv2DecodeImage(int imgid, int pal[]) throws IOException, SFFDecodeException {
+		//SFFv2, uncompressed, rle5, lz5, rle8, png8, png24 and png32 are possible
+		//if image is linked, forward link
+		int linkstate = GetLinkState(imgid);
+		if(linkstate != -1) {
+			return SFFv2DecodeImage(linkstate, pal);
+		}
+		//Get image information
+		int imgw = SFFv2GetImageWidth(imgid);
+		int imgh = SFFv2GetImageHeight(imgid);
+		int imgc = SFFv2GetImageColorDepth(imgid);
+		int imgt = SFFv2GetImageType(imgid);
+		//Get palette (only for index colored image)
+		int dpal[] = null;
+		if(pal != null && pal.length == Math.pow(2, imgc) ) {
+			dpal = pal; //if pal[] is not null and has complete data
+		} else {
+			//Get associated palette if image has palette (colordepth >= 8 image does not have palette)
+			if(imgc == 8) {
+				int palind = SFFv2GetImagePaletteIndex(imgid);
+				dpal = SFFv2GetPalette(palind);
+			}
+		}
+		byte data[] = GetRawImage(imgid); //Get raw image data
+		//Currently rle8 and uncompressed are supported format
+		if(imgt == SFFV2_IMGTYPE_RAW) {
+			return SFFv2DecodeRawImage(data, imgw, imgh, imgc, dpal, imgid);
+		} else if(imgt == SFFV2_IMGTYPE_RLE8 && imgc == 8) {
+			return SFFv2DecodeRLE8Image(data, imgw, imgh, dpal, imgid);
+		} else if( (imgt == SFFV21_IMGTYPE_PNG24 && imgc == 24) ||
+			(imgt == SFFV21_IMGTYPE_PNG32 && imgc == 32)) {
+			//PNG file format with image size uint32_t header
+			/*for(int i = 0; i < data.length; i++) {
+				System.out.printf("%02x ",data[i]);
+				if(i % 16 == 15) {
+					System.out.println();
+				}
+			}*/
+			//PNG24 and PNG32 decode, we have java.image.imageIO to decode png
+			ByteArrayInputStream bin = new ByteArrayInputStream(data, 4, data.length - 4);
+			return ImageIO.read(bin);
+		//} else if(imgt == SFFV21_IMGTYPE_PNG8 && imgc == 8) {
+			//PNG8, in sff, PLTE chunk will be Zero filled
+			//Must get palette and modify PLTE before proceeding
+		} else {
+			throw new SFFDecodeException(String.format("%d: Bad format or unsupported: type%d depth%d", imgid, imgt, imgc),
+				SFFDecodeException.BAD_SUBFILE, imgid);
+		}
+	}
+	
+	//Internal function to decode SFFv1 pcx
+	BufferedImage DecodePCXImage(int imgid, int pal[]) throws IOException, SFFDecodeException {
 		byte data[] = GetRawImage(imgid);
-		int pal[];
 		if(data.length < 128) {
 			throw new EOFException(
 				String.format("index%d: PCX data is shorter than expected.", imgid) );
@@ -663,11 +713,17 @@ public class KumoSFFReader {
 		int imgheight = maxy - miny + 1;
 		//offset 66 uint16_t single scanline size per plane
 		int scanline = (int)Common.b2ui(data, 66, 2);
-		//Decode palette if image is in individual palette
-		if(!IsSharedPalette(imgid)) {
-			pal = GetPalette(imgid); //Get palette in PCX
+		//Decide palette to use
+		int dpal[];
+		if(pal != null && pal.length == 256) {
+			dpal = pal; //If pal[] is specified and had 256 element
 		} else {
-			pal = SharedPal; //Use shared palette
+			//if pal[] is incomplete, try to get palette data
+			if(!IsSharedPalette(imgid)) {
+				dpal = GetPalette(imgid); //Get palette in PCX
+			} else {
+				dpal = SharedPal; //Use shared palette
+			}
 		}
 		//Decode RLE and convert to BufferedImage
 		BufferedImage r = new BufferedImage(imgwidth, imgheight, BufferedImage.TYPE_INT_ARGB);
@@ -684,7 +740,7 @@ public class KumoSFFReader {
 				for(int j = 0; j < runlen; j++) {
 					//store pixel data while currentx is less than image width
 					if(currentx < imgwidth) {
-						r.setRGB(currentx, currenty, pal[e]);
+						r.setRGB(currentx, currenty, dpal[e]);
 					}
 					//advance currentx, if it is greater or equal than scanline,
 					//return it to 0. we can simplly use ++ because BufferedImage and pcx
@@ -829,21 +885,28 @@ public class KumoSFFReader {
 		output.raw and output.act combo.
 	*/
 	public static void main(String args[]) throws Exception {
+		//Open ACT
+		byte actdata[] = new byte[768];
+		RandomAccessFile act = new RandomAccessFile("/home/owner/programs/mugen-1.1b1/chars/lily_hy/lily2.act", "r");
+		act.readFully(actdata);
+		act.close();
+		int pal[] = new int[256];
+		for(int i = 0; i < 256; i++) {
+			int e = (int)Common.b2uibe(actdata, i * 3, 3);
+			if(i != 0) {e += 0xff000000; }
+			pal[i] = e;
+			System.out.printf("%08x\n", pal[i]);
+		}
 		//Open SFF
-		KumoSFFReader sr = new KumoSFFReader(args[0]);
-		//Get 0, 0 Image (Small Portrait)
-		int i = sr.FindIndexByNumbers(9000, 1);
-		if(i == -1) {
-			i = sr.FindIndexByNumbers(9000, 0);
-		}
-		if(i != -1) {
-			BufferedImage b = sr.ConvertImage(i);
-			ImageIO.write(b, "png", new File("output.png"));
-		}
+		KumoSFFReader sr = new KumoSFFReader("/home/owner/programs/mugen-1.1b1/chars/lily_hy/lily_B.sff");
 		System.out.printf("Total image count: %d\n", sr.GetImageCount() );
 		if(sr.GetSFFVersion() == SFF_V2) {
 			System.out.println("SFF Version 2");
 			System.out.printf("Total palette count: %d\n", sr.SFFv2GetPaletteCount());
+		}
+		for(int i = 0; i < sr.GetImageCount(); i++) {
+			BufferedImage b = sr.ConvertImage(i, pal);
+			ImageIO.write(b, "png", new File(String.format("testout/%d.png", i) ) );
 		}
 		sr.closeSFF(); //close
 	}
