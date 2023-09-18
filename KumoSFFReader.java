@@ -13,7 +13,7 @@ public class KumoSFFReader {
 	SFFElements sffinfo[];
 	SFFPaletteElement palinfo[];
 	int SharedPal[] = null;
-	final static String VER = "v1.5.0 - AUG212023";
+	final static String VER = "v2.1-1.5.1-Sep182023";
 	final byte IDENT[] = {'E', 'l', 'e', 'c', 'b', 'y', 't', 'e', 'S', 'p', 'r', 0};
 	final byte VER_V1[] = {0, 1, 0, 1};
 	final byte VER_V2[] = {0, 0, 0, 2};
@@ -927,7 +927,7 @@ public class KumoSFFReader {
 		String s = "KumoSFFReader (C) 2023 Kumohakase\n" + 
 						"CC BY-SA https://creativecommons.org/licenses/by-sa/4.0/\n" +
 						VER + "\n" +
-						"This library provides function to decode MUGEN SFF version 1\n" +
+						"This library provides function to decode MUGEN SFF version 1, 2.0 and 2.1 (partial support)\n" +
 						"image array file from Elecbyte.\n" +
 						"Please consider supporting me https://ko-fi.com/kumohakase.";
 		return s;
