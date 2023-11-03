@@ -1,6 +1,7 @@
 # KumoSFFReader
 This library provides function reading MUGEN sff imagearray   
-Now with sffv2 beta support (Only supports RAW8 and RLE8, PNG is not yet)   
+Now with sffv2 and v2.1 beta support    
+(Supported sffv2 internal formats: RAW formats, PNG24, PNG32 and RLE8)   
 file format made by Elecbyte  
 Written in Java.   
    
@@ -46,7 +47,7 @@ Returns color depth of image at index imgid, usually 8 for 256 index color image
 Returns image size information of image   
 - int SFFv2GetImageType(int imgid) SFFv2 only   
 Returns image compression method.   
-0: Raw 1: Invalid(Linked) 2: RLE8 3: RLE5 4: LZ5   
+0: Raw 1: Invalid(Linked) 2: RLE8 3: RLE5 4: LZ5 10: PNG8 11: PNG24 12: PNG32  
 - int SFFv2GetImagePaletteIndex(int imgid) SFFv2 only  
 Returns palette index associated with image    
 - int SFFv2GetPaletteSize(int palid) SFFv2 only    
@@ -57,7 +58,7 @@ Returns palette linked id if palette is linked, otherwise -1
 Data getter:  
 - byte\[\] GetRawImage(int imgid)   
 Returns raw image (in sffv1, it is raw pcx) of the image at index imgid
-- BufferedImage ConvertImage(int imgid) SFFv1 only  
+- BufferedImage ConvertImage(int imgid)    
 Returns java.awt.image.BufferedImage object of the image at index imgid   
 - int\[\] GetPalette(int imgid) 
 Returns 256 colour palette (Array of ARGB8888 in order of colour index)    
@@ -98,6 +99,9 @@ CC BY-SA https://creativecommons.org/licenses/by-sa/4.0/
 Please consider supporting me https://ko-fi.com/kumohakase  
 
 # Todo
-- RAW24, RAW32, LZ5, RLE5 decode (ConvertImage() )
-- PNG8, PNG24, PNG32 decode (ConvertImage(), sffv2.1 feature)
+- LZ5, RLE5 decode (ConvertImage() )
+- PNG8 decode (ConvertImage(), sffv2.1 feature)
 - Set external palette
+    
+# Problem
+Currently giving up RLE5, no hint to decode...   

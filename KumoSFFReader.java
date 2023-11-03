@@ -659,7 +659,7 @@ public class KumoSFFReader {
 			}
 		}
 		byte data[] = GetRawImage(imgid); //Get raw image data
-		//Currently rle8 and uncompressed are supported format
+		//RLE8, PNG24, PNG32 and RAW* formats are supported
 		if(imgt == SFFV2_IMGTYPE_RAW) {
 			return SFFv2DecodeRawImage(data, imgw, imgh, imgc, dpal, imgid);
 		} else if(imgt == SFFV2_IMGTYPE_RLE8 && imgc == 8) {
