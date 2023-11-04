@@ -1,7 +1,11 @@
 # KumoSFFReader
 This library provides function reading MUGEN sff imagearray   
-Now with sffv2 and v2.1 beta support    
-(Supported sffv2 internal formats: RAW formats, PNG24, PNG32 and RLE8)   
+Now with sffv2 beta support and v2.1 support    
+Supported internal formats (number is color depth)   
+- PCX from sffv1
+- RLE8 from sffv2
+- RAW8, RAW24 and RAW32 from sffv2
+- PNG8, PNG24 and PNG32 from sffv2.1 (poweredby ImageIO)
 file format made by Elecbyte  
 Written in Java.   
    
@@ -100,8 +104,6 @@ Please consider supporting me https://ko-fi.com/kumohakase
 
 # Todo
 - LZ5, RLE5 decode (ConvertImage() )
-- PNG8 decode (ConvertImage(), sffv2.1 feature)
-- Set external palette
     
 # Problem
 Currently giving up RLE5, no hint to decode...   

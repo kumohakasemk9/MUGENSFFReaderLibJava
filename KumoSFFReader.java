@@ -66,13 +66,13 @@ public class KumoSFFReader {
 		byte hdr[] = new byte[16];
 		sff.readFully(hdr);
 		//Check magic byte, if wrong then error
-		if(!Common.compareBytes(hdr, 0, IDENT) ) {
+		if(!C.compareBytes(hdr, 0, IDENT) ) {
 			throw new SFFDecodeException("File magic byte missmatch!", SFFDecodeException.WRONG_IDENT);
 		}
 		//Check file ver
-		if(Common.compareBytes(hdr, 12, VER_V1) ) {
+		if(C.compareBytes(hdr, 12, VER_V1) ) {
 			initSFFv1(); //SFF v1 reading
-		} else if(Common.compareBytes(hdr, 12, VER_V2) || Common.compareBytes(hdr, 12, VER_V2_1) ) {
+		} else if(C.compareBytes(hdr, 12, VER_V2) || C.compareBytes(hdr, 12, VER_V2_1) ) {
 			initSFFv2(); //SFF v2 reading
 		} else {
 			throw new SFFDecodeException("Incompatible sff version!", SFFDecodeException.BAD_VER);
@@ -84,11 +84,11 @@ public class KumoSFFReader {
 		//Read header except magic bytes and version info
 		byte hdr[] = new byte[20];
 		sff.readFully(hdr);
-		int image_total = (int)Common.b2ui(hdr, 4, 4); //Offset +20, uint32_t, total image count
-		int file_offset = (int)Common.b2ui(hdr, 8, 4); //Offset +24, uint32_t, subfile offset	
+		int image_total = (int)C.b2ui(hdr, 4, 4); //Offset +20, uint32_t, total image count
+		int file_offset = (int)C.b2ui(hdr, 8, 4); //Offset +24, uint32_t, subfile offset	
 		//Check records.
-		if(!Common.in_range(image_total, 0, 65535) ||
-			!Common.in_range(file_offset, 0, sff.length() ) ) {
+		if(!C.in_range(image_total, 0, 65535) ||
+			!C.in_range(file_offset, 0, sff.length() ) ) {
 			throw new SFFDecodeException("Bad header records!", 
 				SFFDecodeException.BAD_FILE);
 		}
@@ -99,20 +99,19 @@ public class KumoSFFReader {
 			//read subfile header
 			byte shdr[] = new byte[19];
 			sff.readFully(shdr);
-			int next_off = (int)Common.b2ui(shdr, 0, 4); //Offset: 0 uint32_t next data offset
-			int file_len = (int)Common.b2ui(shdr, 4, 4); //Offset: 4 uint32_t image data length
-			int imgx = Common.b2i16(shdr, 8); //Offset: 8 int16_t image center x
-			int imgy = Common.b2i16(shdr, 10); //Offset: 10 int16_t image center y
-			int grp = (int)Common.b2ui(shdr, 12, 2); //Offset 12 uint16_t image group number
-			int ino = (int)Common.b2ui(shdr, 14, 2); //Offset 14 uint16_t image number
+			int next_off = (int)C.b2ui(shdr, 0, 4); //Offset: 0 uint32_t next data offset
+			int file_len = (int)C.b2ui(shdr, 4, 4); //Offset: 4 uint32_t image data length
+			int imgx = C.b2i16(shdr, 8); //Offset: 8 int16_t image center x
+			int imgy = C.b2i16(shdr, 10); //Offset: 10 int16_t image center y
+			int grp = (int)C.b2ui(shdr, 12, 2); //Offset 12 uint16_t image group number
+			int ino = (int)C.b2ui(shdr, 14, 2); //Offset 14 uint16_t image number
 			//Offset 16 uint16_t image link destination id, if filelen = 0 this subfile is linked
 			//to another image
-			int ilin = (int)Common.b2ui(shdr, 16, 2);
-			int pal = (int)Common.b2ui(shdr, 18, 1); //Offset 18 uint8_t Palette mode 1 or 0
+			int ilin = (int)C.b2ui(shdr, 16, 2);
+			int pal = (int)C.b2ui(shdr, 18, 1); //Offset 18 uint8_t Palette mode 1 or 0
 			//Check parameters
-			if(!Common.in_range(next_off, 0, sff.length() ) || 
-				!Common.in_range(file_len, 0, sff.length() ) ||
-				!Common.in_range(ilin, 0, image_total) || !Common.in_range(pal, 0, 1) ) {
+			if(!C.in_range(next_off, 0, sff.length() ) || !C.in_range(file_len, 0, sff.length() ) ||
+				!C.in_range(ilin, 0, image_total) || !C.in_range(pal, 0, 1) ) {
 				throw new SFFDecodeException(String.format("Bad subheader records on index%d!", i) ,
 					SFFDecodeException.BAD_FILE, i);
 			}
@@ -148,17 +147,17 @@ public class KumoSFFReader {
 		//Read header except magic bytes and version info
 		byte hdr[] = new byte[52];
 		sff.readFully(hdr);
-		int spr_offset = (int)Common.b2ui(hdr, 20, 4); //offset 36 uint32_t sprite data table offset
-		int spr_count = (int)Common.b2ui(hdr, 24, 4); //offset 40 uint32_t sprite data count
-		int pal_offset = (int)Common.b2ui(hdr, 28, 4); //Offset 44 uint32_t palette data table offset
-		int pal_count = (int)Common.b2ui(hdr, 32, 4); //offset 48 uint32_t palette data count
-		int ldata_offset = (int)Common.b2ui(hdr, 36, 4); //offset 52 uint32_t ldata offset
-		int tdata_offset = (int)Common.b2ui(hdr, 44, 4); //offset 60 uint32_t tdata offset
+		int spr_offset = (int)C.b2ui(hdr, 20, 4); //offset 36 uint32_t sprite data table offset
+		int spr_count = (int)C.b2ui(hdr, 24, 4); //offset 40 uint32_t sprite data count
+		int pal_offset = (int)C.b2ui(hdr, 28, 4); //Offset 44 uint32_t palette data table offset
+		int pal_count = (int)C.b2ui(hdr, 32, 4); //offset 48 uint32_t palette data count
+		int ldata_offset = (int)C.b2ui(hdr, 36, 4); //offset 52 uint32_t ldata offset
+		int tdata_offset = (int)C.b2ui(hdr, 44, 4); //offset 60 uint32_t tdata offset
 		//Check parameters
-		if(!Common.in_range(spr_offset, 0, sff.length() ) || !Common.in_range(spr_count, 0, 65535) ||
-			!Common.in_range(pal_offset, 0, sff.length() ) || !Common.in_range(pal_count, 0, 65535) ||
-			!Common.in_range(ldata_offset, 0, sff.length() )|| 
-			!Common.in_range(tdata_offset, 0, sff.length() ) ) {
+		if(!C.in_range(spr_offset, 0, sff.length() ) || !C.in_range(spr_count, 0, 65535) ||
+			!C.in_range(pal_offset, 0, sff.length() ) || !C.in_range(pal_count, 0, 65535) ||
+			!C.in_range(ldata_offset, 0, sff.length() ) ||
+			!C.in_range(tdata_offset, 0, sff.length() ) ) {
 			throw new SFFDecodeException("Bad header records!", 
 				SFFDecodeException.BAD_FILE);
 		}
@@ -169,12 +168,12 @@ public class KumoSFFReader {
 			//read 16 octet (single palette record)
 			byte shdr[] = new byte[16];
 			sff.read(shdr);
-			int grp = (int)Common.b2ui(shdr, 0, 2); //Offset 0 uint16_t palette group number
-			int pno = (int)Common.b2ui(shdr, 2, 2); //Offset 2 uint16_t palette item number
-			int ncol = (int)Common.b2ui(shdr, 4, 2); //Offset 4 uint16_t Element count
-			int lind = (int)Common.b2ui(shdr, 6, 2); //Offset 6 uint16_t link index
-			int fileoff = (int)Common.b2ui(shdr, 8, 4); //Offset 8 uint32_t data offset
-			int filelen = (int)Common.b2ui(shdr, 12, 4); //Offset 12 uint32_t data length
+			int grp = (int)C.b2ui(shdr, 0, 2); //Offset 0 uint16_t palette group number
+			int pno = (int)C.b2ui(shdr, 2, 2); //Offset 2 uint16_t palette item number
+			int ncol = (int)C.b2ui(shdr, 4, 2); //Offset 4 uint16_t Element count
+			int lind = (int)C.b2ui(shdr, 6, 2); //Offset 6 uint16_t link index
+			int fileoff = (int)C.b2ui(shdr, 8, 4); //Offset 8 uint32_t data offset
+			int filelen = (int)C.b2ui(shdr, 12, 4); //Offset 12 uint32_t data length
 			SFFPaletteElement e = new SFFPaletteElement();
 			e.groupid = grp;
 			e.paletteid =  pno;
@@ -183,7 +182,7 @@ public class KumoSFFReader {
 			e.paloffset = fileoff + ldata_offset; //Actual palette offset: ldata_offset + this value
 			e.pallength = filelen;
 			//Check file offset and length
-			if(!Common.in_range(e.paloffset, 0, sff.length() - filelen) ) {
+			if(!C.in_range(e.paloffset, 0, sff.length() - filelen) ) {
 				throw new SFFDecodeException(
 					String.format("Palette%d: Offset or length is out of file!", i),
 					SFFDecodeException.BAD_SUBFILE, i);
@@ -205,23 +204,22 @@ public class KumoSFFReader {
 			//Read next record, each record is 28 octets long
 			byte[] shdr = new byte[28];
 			sff.readFully(shdr);
-			int grp = (int)Common.b2ui(shdr, 0, 2); //Offset 0 uint16_t Group number
-			int ino = (int)Common.b2ui(shdr, 2, 2); //Offset 2 uint16_t Image number
-			int iwidth = (int)Common.b2ui(shdr, 4, 2); //Offset 4 uint16_t Image width
-			int iheight = (int)Common.b2ui(shdr, 6, 2); //Offset 6 uint16_t Image height
-			int x = Common.b2i16(shdr, 8); //Offset 8 int16_t Center X
-			int y = Common.b2i16(shdr, 10); //Offset 10 int16_t Center Y
-			int lind = (int)Common.b2ui(shdr, 12, 2); //Offset 12 uint16_t link index
-			int imgf = (int)Common.b2ui(shdr, 14, 1); //Offset 14 uint8_t image format type 0~4
-			int cdep = (int)Common.b2ui(shdr, 15, 1); //Offset 15 uint8_t image color depth
-			int file_off = (int)Common.b2ui(shdr, 16, 4); //Offset 16 uint32_t image offset
-			int file_len = (int)Common.b2ui(shdr, 20, 4); //Offset 20 uint32_t image length
-			int pal_index = (int)Common.b2ui(shdr, 24, 2); //Offset 24 uint16_t palette index
-			int flags = (int)Common.b2ui(shdr, 26, 2); //Offset 26 uint16_t falgs
+			int grp = (int)C.b2ui(shdr, 0, 2); //Offset 0 uint16_t Group number
+			int ino = (int)C.b2ui(shdr, 2, 2); //Offset 2 uint16_t Image number
+			int iwidth = (int)C.b2ui(shdr, 4, 2); //Offset 4 uint16_t Image width
+			int iheight = (int)C.b2ui(shdr, 6, 2); //Offset 6 uint16_t Image height
+			int x = C.b2i16(shdr, 8); //Offset 8 int16_t Center X
+			int y = C.b2i16(shdr, 10); //Offset 10 int16_t Center Y
+			int lind = (int)C.b2ui(shdr, 12, 2); //Offset 12 uint16_t link index
+			int imgf = (int)C.b2ui(shdr, 14, 1); //Offset 14 uint8_t image format type 0~4
+			int cdep = (int)C.b2ui(shdr, 15, 1); //Offset 15 uint8_t image color depth
+			int file_off = (int)C.b2ui(shdr, 16, 4); //Offset 16 uint32_t image offset
+			int file_len = (int)C.b2ui(shdr, 20, 4); //Offset 20 uint32_t image length
+			int pal_index = (int)C.b2ui(shdr, 24, 2); //Offset 24 uint16_t palette index
+			int flags = (int)C.b2ui(shdr, 26, 2); //Offset 26 uint16_t falgs
 			//Check parameters
-			if(!(Common.in_range(imgf, 0, 4) || Common.in_range(imgf, 10, 12) ) ||
-				!Common.in_range(lind, 0, spr_count) ||
-				!Common.in_range(pal_index, 0, pal_count) ) {
+			if(!(C.in_range(imgf, 0, 4) || C.in_range(imgf, 10, 12) ) ||
+				!C.in_range(lind, 0, spr_count) || !C.in_range(pal_index, 0, pal_count) ) {
 				throw new SFFDecodeException(
 				String.format("Image %d: Bad image format, link id or palette id."
 				, i) ,SFFDecodeException.BAD_FILE, i);
@@ -253,7 +251,7 @@ public class KumoSFFReader {
 			}
 			e.imglength = file_len;
 			//Check if image offset is in file
-			if(!Common.in_range(e.imgoffset, 0, sff.length() - e.imglength) ) {
+			if(!C.in_range(e.imgoffset, 0, sff.length() - e.imglength) ) {
 				throw new SFFDecodeException(
 					String.format("Image %d: offset or length is out of file.", i),
 					SFFDecodeException.BAD_FILE, i);
@@ -275,9 +273,10 @@ public class KumoSFFReader {
 		if(data.length < 4) {
 			throw new EOFException(String.format("%d: RLE8 image data too short!", ind) );
 		}
-		int rawsize = (int)Common.b2ui(data, 0, 4);
+		int rawsize = (int)C.b2ui(data, 0, 4);
 		if(rawsize != imgw * imgh) {
-			throw new SFFDecodeException(String.format("%d: RLE8 image uncompressed octet count is wrong!"),
+			throw new SFFDecodeException(
+				String.format("%d: RLE8 image uncompressed octet count is wrong!"),
 				SFFDecodeException.BAD_SUBFILE, ind);
 		}
 		for(int c = 0;c < data.length - 4; c++) {
@@ -292,8 +291,8 @@ public class KumoSFFReader {
 				for(int ii = 0; ii < rl; ii++) {
 					int clr = pal[e];
 					img.setRGB(x, y, clr);
-					//advance x, we can use simple ++ method because java.awt.image.BufferedImage and sffv2 RLE8 has
-					//same coordinate system
+					//advance x, we can use simple ++ method because java.awt.image.BufferedImage
+					//and sffv2 RLE8 has same coordinate system
 					x++;
 					if(x >= imgw) {
 						y++;
@@ -315,7 +314,8 @@ public class KumoSFFReader {
 		throws SFFDecodeException, IOException {
 		//Colordepth must be 8 (256 color index) or 24 (RGB888) or 32 (ARGB8888)
 		if(cdep != 8 && cdep != 24 && cdep != 32) {
-			throw new SFFDecodeException(String.format("%d: Bad colordepth! (accepted values: 8, 24 and 32)", ind),
+			throw new SFFDecodeException(
+				String.format("%d: Bad colordepth! (accepted values: 8, 24 and 32)", ind),
 				SFFDecodeException.BAD_SUBFILE, ind);
 		}
 		int colorocts = cdep / 8; //octet per pixel
@@ -331,11 +331,11 @@ public class KumoSFFReader {
 				c = pal[e];
 			} else if(cdep == 24) {
 				//24bit RGB888 (convert to ARGB8888)
-				c = (int)Common.b2uibe(data, i * 3, 3) + 0xff000000;
+				c = (int)C.b2uibe(data, i * 3, 3) + 0xff000000;
 			} else {
 				//32bit RGBA8888 (convert to ARGB8888)
 				//System.out.printf("%08x\n", (int)Common.b2uibe(data, i * 4, 4) );
-				c = (int)Common.b2uibe(data, i * 4, 3); //rgb888
+				c = (int)C.b2uibe(data, i * 4, 3); //rgb888
 				c += Byte.toUnsignedInt(data[i * 4 + 3]) << 24; //alpha
 				
 			}
@@ -585,7 +585,7 @@ public class KumoSFFReader {
 		int pal[] = new int[256];
 		//Decode palette, palette is 256 count array of RGB888 values 
 		for(int i = 0; i < 256; i++) {
-			pal[i] = (int)Common.b2uibe(data, paloff + (i * 3) + 1, 3); //get RGB888 value
+			pal[i] = (int)C.b2uibe(data, paloff + (i * 3) + 1, 3); //get RGB888 value
 			//convert to ARGB8888
 			//index 0 colour is always transparent, alpha=255 except index 0
 			if(i != 0) {pal[i] += 0xff000000;}
@@ -673,14 +673,20 @@ public class KumoSFFReader {
 					System.out.println();
 				}
 			}*/
-			//PNG24 and PNG32 decode, we have java.image.imageIO to decode png
-			ByteArrayInputStream bin = new ByteArrayInputStream(data, 4, data.length - 4);
-			return ImageIO.read(bin);
-		//} else if(imgt == SFFV21_IMGTYPE_PNG8 && imgc == 8) {
+			return DConv.fromPNG(data);
+		} else if(imgt == SFFV21_IMGTYPE_PNG8 && imgc == 8) {
 			//PNG8, in sff, PLTE chunk will be Zero filled
 			//Must get palette and modify PLTE before proceeding
+			try {
+				return DConv.fromPNG(data, dpal);
+			} catch(Exception ex) {
+				throw new SFFDecodeException(
+				String.format("%d: Bad formatted PNG8", imgid),
+				SFFDecodeException.BAD_SUBFILE, imgid);
+			}
 		} else {
-			throw new SFFDecodeException(String.format("%d: Bad format or unsupported: type%d depth%d", imgid, imgt, imgc),
+			throw new SFFDecodeException(
+				String.format("%d: Bad format or unsupported: type%d depth%d", imgid, imgt, imgc),
 				SFFDecodeException.BAD_SUBFILE, imgid);
 		}
 	}
@@ -705,14 +711,14 @@ public class KumoSFFReader {
 				SFFDecodeException.BAD_SUBFILE, imgid);
 		}
 		//Calculate image size
-		int minx = (int)Common.b2ui(data, 4, 2); //offset 4 uint16_t minx
-		int miny = (int)Common.b2ui(data, 6, 2); //offset 6 uint16_t miny
-		int maxx = (int)Common.b2ui(data, 8, 2); //offset 8 uint16_t maxx
-		int maxy = (int)Common.b2ui(data, 10, 2); //offset 10 uint16_t maxy
+		int minx = (int)C.b2ui(data, 4, 2); //offset 4 uint16_t minx
+		int miny = (int)C.b2ui(data, 6, 2); //offset 6 uint16_t miny
+		int maxx = (int)C.b2ui(data, 8, 2); //offset 8 uint16_t maxx
+		int maxy = (int)C.b2ui(data, 10, 2); //offset 10 uint16_t maxy
 		int imgwidth = maxx - minx + 1;
 		int imgheight = maxy - miny + 1;
 		//offset 66 uint16_t single scanline size per plane
-		int scanline = (int)Common.b2ui(data, 66, 2);
+		int scanline = (int)C.b2ui(data, 66, 2);
 		//Decide palette to use
 		int dpal[];
 		if(pal != null && pal.length == 256) {
@@ -836,7 +842,7 @@ public class KumoSFFReader {
 		int[] _r = new int[SFFv2GetPaletteSize(palid)];
 		for(int i = 0; i < _r.length; i++) {
 			//Converting RGBA8888 to ARGB8888
-			_r[i] = (int)Common.b2uibe(data, i * 4, 3); //GET RGB888
+			_r[i] = (int)C.b2uibe(data, i * 4, 3); //GET RGB888
 			//alpha=255 except index 0
 			if(i != 0) { _r[i] = _r[i] + 0xff000000; }
 		}
@@ -883,7 +889,7 @@ public class KumoSFFReader {
 	/**
 		for test, currently outputs 0, 0 image of specified sff as output.png or
 		output.raw and output.act combo.
-	*/
+	*/ /*
 	public static void main(String args[]) throws Exception {
 		//Open ACT
 		byte actdata[] = new byte[768];
@@ -892,7 +898,7 @@ public class KumoSFFReader {
 		act.close();
 		int pal[] = new int[256];
 		for(int i = 0; i < 256; i++) {
-			int e = (int)Common.b2uibe(actdata, i * 3, 3);
+			int e = (int)DataUtil.b2uibe(actdata, i * 3, 3);
 			if(i != 0) {e += 0xff000000; }
 			pal[i] = e;
 			System.out.printf("%08x\n", pal[i]);
@@ -909,7 +915,7 @@ public class KumoSFFReader {
 			ImageIO.write(b, "png", new File(String.format("testout/%d.png", i) ) );
 		}
 		sr.closeSFF(); //close
-	}
+	} */
 	
 	/**
 		Return library version string.

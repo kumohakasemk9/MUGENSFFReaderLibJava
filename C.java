@@ -1,6 +1,9 @@
 package kumotechmadlab.sffreader;
 
-public class Common {
+/**
+Common functions used in main program
+*/
+public class C {
 	//Convert data[]'s bytes (from index offs to len times) to integer (little endian, unsigned)
 	public static long b2ui(byte data[], int offs, int len) {
 		long r = 0;
@@ -10,7 +13,7 @@ public class Common {
 		return r;
 	}
 	
-	//b2ui but big endian version, max len limit is 4
+	//Convert data[]'s bytes (from index offs to len times) to integer (big endian, unsigned)
 	public static long b2uibe(byte[] data, int offs, int len) {
 		long r = 0;
 		for(int i = 0; i < len; i++) {
@@ -40,5 +43,14 @@ public class Common {
 			return true;
 		}
 		return false;
+	}
+	
+	//Convert uint32 to byte[4] and rewrite byte[] t with it from offs
+	public static void ui32tob(long d, byte[] t, int offs) {
+		byte r[] = new byte[4];
+		t[offs+3] = (byte) (d & 0xff);
+		t[offs+2] = (byte) ((d >> 8) & 0xff);
+		t[offs+1] = (byte) ((d >> 16) & 0xff);
+		t[offs] = (byte) ((d >> 24) & 0xff);
 	}
 }
