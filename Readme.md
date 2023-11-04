@@ -1,13 +1,13 @@
 # KumoSFFReader
 This library provides function reading MUGEN sff imagearray   
 Now with sffv2 beta support and v2.1 support    
+file format made by Elecbyte  
+Written in Java.   
 Supported internal formats (number is color depth)   
 - PCX from sffv1
 - RLE8 from sffv2
 - RAW8, RAW24 and RAW32 from sffv2
 - PNG8, PNG24 and PNG32 from sffv2.1 (poweredby ImageIO)
-file format made by Elecbyte  
-Written in Java.   
    
 # How to use
 first, please add library jar to class path. and   
