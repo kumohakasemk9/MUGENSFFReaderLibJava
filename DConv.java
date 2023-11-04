@@ -39,7 +39,7 @@ public class DConv {
 		int start = -1;
 		int end = 0;
 		while(p < data.length) {
-			int s = (int)C.b2ui(data, p, 4); //read len
+			int s = (int)C.b2uibe(data, p, 4); //read len
 			//read chunk type and compare
 			if(C.compareBytes(data, p + 4, sign) ) {
 				start = p; //offset of PLTE chunk

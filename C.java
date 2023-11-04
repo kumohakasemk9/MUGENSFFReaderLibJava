@@ -53,4 +53,19 @@ public class C {
 		t[offs+1] = (byte) ((d >> 16) & 0xff);
 		t[offs] = (byte) ((d >> 24) & 0xff);
 	}
+	
+	//Debug purpose: hexdump -C but without ascii
+	public static void hd(byte[] data) {
+		System.out.println("offs || +0 +1 +2 +3 +4 +5 +6 +7 +8 +9 +a +b +c +d +e +f");
+		for(int i = 0; i < data.length; i++) {
+			if(i % 16 == 0) {
+				System.out.printf("%04x || ",i);
+			}
+			System.out.printf("%02x ", data[i]);
+			if(i % 16 == 15) {
+				System.out.println();
+			}
+		}
+		System.out.println();
+	}
 }

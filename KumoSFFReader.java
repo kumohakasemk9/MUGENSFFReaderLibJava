@@ -13,7 +13,7 @@ public class KumoSFFReader {
 	SFFElements sffinfo[];
 	SFFPaletteElement palinfo[];
 	int SharedPal[] = null;
-	final static String VER = "v2.1-1.5.1-Sep182023";
+	final static String VER = "v2.1-1.6.1-Nov42023";
 	final byte IDENT[] = {'E', 'l', 'e', 'c', 'b', 'y', 't', 'e', 'S', 'p', 'r', 0};
 	final byte VER_V1[] = {0, 1, 0, 1};
 	final byte VER_V2[] = {0, 0, 0, 2};
@@ -614,8 +614,8 @@ public class KumoSFFReader {
 	
 	/**
 		Get image data of specified index then convert it to BufferedImage
-		using specified palette data. Only for colordepth <= 8 images.
-		if colordepth > 8, pal[] will not be used.
+		using specified palette data. Only for images that has colordepth
+		is 8 or less. Otherwise pal[] will not be used.
 		@param imgid Image index in order of sff subfiles.
 		@param pal[] palette data, ARGB8888 array.
 		@return BufferedImage, formatted in TYPE_INT_ARGB32.
